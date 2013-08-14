@@ -108,7 +108,7 @@ void addPerturbedLayer(real3 origin, ShapeType type, real3 rad, int3 num_per_dir
 				dp.x = rand() % 10000 / 10000.0 * a.x - a.x / 2.0;
 				dp.y = rand() % 10000 / 10000.0 * a.y - a.y / 2.0;
 				dp.z = rand() % 10000 / 10000.0 * a.z - a.z / 2.0;
-d=d*.6;
+
 				pos.x = i * d.x - num_per_dir.x * d.x * .5;
 				pos.y = j * d.y - num_per_dir.y * d.y * .5;
 				pos.z = k * d.z - num_per_dir.z * d.z * .5;
