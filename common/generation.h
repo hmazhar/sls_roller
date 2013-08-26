@@ -6,11 +6,18 @@ class ParticleGenerator {
 			mSys = system;
 			mass = 1;
 			use_normal_dist = false;
+			use_density = false;
+
 			material=ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 		}
 
 		void SetMass(real m) {
 			mass = m;
+		}
+
+		void SetDensity(real d) {
+			density = d;
+
 		}
 
 		void SetRadius(real3 r) {
@@ -82,7 +89,9 @@ class ParticleGenerator {
 							r.y = distribution(generator);
 							r.z = distribution(generator);
 						}
-
+						if(use_density){
+							mass = density*4.0/3.0*PI*r.x*r.x*r.x;
+						}
 						InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, counter);
 
 						AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
@@ -110,8 +119,10 @@ class ParticleGenerator {
 		real mean, std_dev;
 		ChSharedBodyPtr body;
 		real mass;
+		real density;
 		real3 radius;
 		bool use_normal_dist;
+		bool use_density;
 		ChSharedPtr<ChMaterialSurface> material;
 		ChSystemGPU* mSys;
 };

@@ -9,8 +9,9 @@ ChQuaternion<> quat(1, 0, 0, 0);
 real container_width = 10;		//width of area with particles
 real container_length = 50;		//length of area that roller will go over		1194mm maximum
 real container_thickness = 1;     //thickness of container walls
-real container_height = 10;		//height of the outer walls
-real container_friction = .2;
+real container_height = 5;		//height of the outer walls
+real container_friction = 0;
+real floor_friction = .2;
 real spacer_width = 1;
 real spacer_height = 1;
 
@@ -22,10 +23,11 @@ real roller_velocity = -127;
 real roller_mass = 1;
 real roller_friction = .2;
 real roller_cohesion = 0;
-real particle_radius = .058;
-real particle_std_dev = .015;
+real particle_radius = .058 / 2.0;
+real particle_std_dev = .015 / 2.0;
 real particle_mass = .05;
-real particle_layer_thickness = 0;
+real particle_density = 0.446;
+real particle_layer_thickness = particle_radius * 4;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
 real timestep = .00001;			//step size
@@ -45,7 +47,7 @@ template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 	ChVector<> roller_pos = ROLLER->GetPos();
 
-	ROLLER->SetPos(ChVector<>(0, roller_radius + particle_layer_thickness, roller_pos.z+roller_velocity*timestep));
+	ROLLER->SetPos(ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, roller_pos.z + roller_velocity * timestep));
 	ROLLER->SetPos_dt(ChVector<>(0, 0, roller_velocity));
 	roller_omega = roller_velocity / roller_radius;
 	ang += roller_omega * timestep;
@@ -66,7 +68,7 @@ void RunTimeStep(T* mSys, const int frame) {
 
 }
 int main(int argc, char* argv[]) {
-	omp_set_num_threads(4);
+	omp_set_num_threads(7);
 
 	if (argc > 1) {
 		//visualize
@@ -139,52 +141,20 @@ int main(int argc, char* argv[]) {
 	ChSharedBodyPtr SPACER_L = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 	ChSharedBodyPtr SPACER_R = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 
+	ChSharedPtr<ChMaterialSurface> material_plate;
+	material_plate = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+	material_plate->SetFriction(floor_friction);
+
+	InitObject(PLATE, 1, ChVector<>(0, 0, 0), quat, material_plate, true, true, -1000, -20000);
+
 	ChSharedPtr<ChMaterialSurface> material;
-	material=ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material->SetFriction(container_friction);
 
-	InitObject(PLATE, 1, ChVector<>(0, 0, 0), quat, material, true, true, -1000, -20000);
-
-	InitObject(
-			L,
-			100000,
-			Vector(-container_width + container_thickness, container_height, 0),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
-	InitObject(
-			R,
-			100000,
-			Vector(container_width - container_thickness, container_height, 0),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
-	InitObject(
-			F,
-			100000,
-			Vector(0, container_height, -container_length + container_thickness),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
-	InitObject(
-			B,
-			100000,
-			Vector(0, container_height, container_length - container_thickness),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
+	InitObject(L, 100000, Vector(-container_width + container_thickness, container_height, 0), quat, material, true, true, -20, -20);
+	InitObject(R, 100000, Vector(container_width - container_thickness, container_height, 0), quat, material, true, true, -20, -20);
+	InitObject(F, 100000, Vector(0, container_height, -container_length + container_thickness), quat, material, true, true, -20, -20);
+	InitObject(B, 100000, Vector(0, container_height, container_length - container_thickness), quat, material, true, true, -20, -20);
 	InitObject(
 			SPACER_L,
 			100000,
@@ -227,33 +197,42 @@ int main(int argc, char* argv[]) {
 	roller_quat.Q_from_AngAxis(PI / 2.0, ChVector<>(0, 0, 1));
 
 	ChSharedPtr<ChMaterialSurface> material_roller;
-	material_roller=ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_roller->SetFriction(roller_friction);
 
-	InitObject(ROLLER, 1, ChVector<>(0, roller_radius + particle_layer_thickness, container_length+roller_radius), roller_quat, material_roller, true, false, -20, -20);
+	InitObject(
+			ROLLER,
+			1,
+			ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius),
+			roller_quat,
+			material_roller,
+			true,
+			false,
+			-20,
+			-20);
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
-	int3 num_per_dir = I3(68, 1, 540);
+	int3 num_per_dir = I3(68 * 2, 4, 540 * 2);
 	//int3 num_per_dir = I3(5, 5, 10);
 	ParticleGenerator layer_gen(system_gpu);
-	layer_gen.SetMass(particle_mass);
-	layer_gen.SetRadius(R3(particle_radius+particle_std_dev*2));
+	layer_gen.SetDensity(particle_density);
+	layer_gen.SetRadius(R3(particle_radius + particle_std_dev * 2));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addVolume(R3(0,3,0),SPHERE, num_per_dir, R3(0));
+	layer_gen.addVolume(R3(0, 3, 0), SPHERE, num_per_dir, R3(0));
 	//addPerturbedLayer(R3(0, 5, 0), CYLINDER, R3(particle_radius), num_per_dir, R3(0, 0, 0), .01, 1, 0, 0, R3(0, -4, 0), (ChSystemGPU*) system_gpu, 0);
 //	/real3 origin, ShapeType type, real3 rad, int3 num_per_dir, real3 percent_perturbation, real mass, real mu, real cohesion, real3 vel, ChSystemGPU* mSys
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
-	ChOpenGLManager * window_manager = new ChOpenGLManager();
-	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-	openGLView.render_camera->camera_pos = Vector(-50, 0, -50);
-	openGLView.render_camera->look_at = Vector(0, 0, 0);
-	openGLView.SetCustomCallback(RunTimeStep);
-	openGLView.StartSpinning(window_manager);
-	window_manager->CallGlutMainLoop();
+//	ChOpenGLManager * window_manager = new ChOpenGLManager();
+//	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
+//	openGLView.render_camera->camera_pos = Vector(-50, 0, -50);
+//	openGLView.render_camera->look_at = Vector(0, 0, 0);
+//	openGLView.SetCustomCallback(RunTimeStep);
+//	openGLView.StartSpinning(window_manager);
+//	window_manager->CallGlutMainLoop();
 	//=========================================================================================================
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
