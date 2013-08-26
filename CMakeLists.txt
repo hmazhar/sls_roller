@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(sls_roller)
 include(SBELUtils.cmake)
 
+
 SET(ENABLE_UNIT_GPU FALSE   CACHE   BOOL    "Turn on for GPU models")
 SET(ENABLE_UNIT_MPI FALSE   CACHE   BOOL    "Turn on for GPU models")
 
@@ -47,3 +48,6 @@ IF (ENABLE_UNIT_GPU)
     TARGET_LINK_LIBRARIES(sls	${CHRONO_LIB} ${GPU_LIBS})
    
 ENDIF(ENABLE_UNIT_GPU)
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
