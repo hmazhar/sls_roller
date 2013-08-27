@@ -31,7 +31,7 @@ real particle_layer_thickness = particle_radius * 4;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
 real timestep = .00001;			//step size
-real time_to_run = .6;			//length of simulation
+real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
 int num_steps = time_to_run / timestep;
@@ -39,7 +39,7 @@ int max_iteration = 10;
 int tolerance = 0;
 
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
-string data_folder = "data";
+string data_folder = "data/sls";
 ChSharedBodyPtr ROLLER;
 real ang = 0;
 
@@ -108,10 +108,10 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(0);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(0);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
+	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(3000);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	mcollisionengine->setBinsPerAxis(R3(40, 100, 200));
+	mcollisionengine->setBinsPerAxis(R3(100, 40, 500));
 	mcollisionengine->setBodyPerBin(100, 50);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
@@ -213,18 +213,22 @@ int main(int argc, char* argv[]) {
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
-	int3 num_per_dir = I3(68 * 2, 4, 540 * 2);
-	//int3 num_per_dir = I3(5, 5, 10);
+	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
+	//int3 num_per_dir = I3(5, 6, 10);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius + particle_std_dev * 2));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addVolume(R3(0, 3, 0), SPHERE, num_per_dir, R3(0));
+	layer_gen.addVolume(R3(0, 1.35, 0), SPHERE, num_per_dir, R3(0));
 	//addPerturbedLayer(R3(0, 5, 0), CYLINDER, R3(particle_radius), num_per_dir, R3(0, 0, 0), .01, 1, 0, 0, R3(0, -4, 0), (ChSystemGPU*) system_gpu, 0);
 //	/real3 origin, ShapeType type, real3 rad, int3 num_per_dir, real3 percent_perturbation, real mass, real mu, real cohesion, real3 vel, ChSystemGPU* mSys
 
 	//=========================================================================================================
+
+
+	//tbb::task_scheduler_init init(7);
+
 	//////Rendering specific stuff:
 //	ChOpenGLManager * window_manager = new ChOpenGLManager();
 //	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
@@ -251,14 +255,15 @@ int main(int argc, char* argv[]) {
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
 		RunTimeStep(system_gpu, i);
-//		if (i % save_every == 0) {
-//			stringstream ss;
-//			cout << "Frame: " << file << endl;
-//			ss << data_folder << "/" << file << ".txt";
-//			DumpObjects(system_gpu, ss.str());
-//			//output.ExportData(ss.str());
-//			file++;
-//		}
+		int save_every = 1.0 / timestep / 6000.0; //save data every n steps
+		if (i % save_every == 0) {
+			stringstream ss;
+			cout << "Frame: " << file << endl;
+			ss << data_folder << "/" << file << ".txt";
+			DumpObjects(system_gpu, ss.str(),",",false);
+			//output.ExportData(ss.str());
+			file++;
+		}
 		current_time += timestep;
 	}
 	stringstream ss;
