@@ -35,10 +35,9 @@ real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
 int num_steps = time_to_run / timestep;
-int max_iteration = 10;
+int max_iteration = 15;
 int tolerance = 0;
 
-GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 string data_folder = "data/sls";
 ChSharedBodyPtr ROLLER;
 real ang = 0;
@@ -68,9 +67,14 @@ void RunTimeStep(T* mSys, const int frame) {
 
 }
 int main(int argc, char* argv[]) {
-	omp_set_num_threads(7);
+	bool visualize = false;
+	int threads = 0;
 
 	if (argc > 1) {
+		threads = atoi(argv[1]);
+		omp_set_num_threads(threads);
+
+		visualize = atoi(argv[2]);
 		//visualize
 		//distribution_type
 		//min_radius
@@ -155,26 +159,8 @@ int main(int argc, char* argv[]) {
 	InitObject(R, 100000, Vector(container_width - container_thickness, container_height, 0), quat, material, true, true, -20, -20);
 	InitObject(F, 100000, Vector(0, container_height, -container_length + container_thickness), quat, material, true, true, -20, -20);
 	InitObject(B, 100000, Vector(0, container_height, container_length - container_thickness), quat, material, true, true, -20, -20);
-	InitObject(
-			SPACER_L,
-			100000,
-			Vector(-container_width + container_thickness * 2 + spacer_width, container_thickness + spacer_height, 0),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
-	InitObject(
-			SPACER_R,
-			100000,
-			Vector(container_width - container_thickness * 2 - spacer_width, container_thickness + spacer_height, 0),
-			quat,
-			material,
-			true,
-			true,
-			-20,
-			-20);
+	InitObject(SPACER_L, 100000, Vector(-container_width + container_thickness * 2 + spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
+	InitObject(SPACER_R, 100000, Vector(container_width - container_thickness * 2 - spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
 
 	AddCollisionGeometry(PLATE, BOX, ChVector<>(container_width, container_thickness, container_length), lpos, quat);
 	AddCollisionGeometry(L, BOX, Vector(container_thickness, container_height, container_length), lpos, quat);
@@ -200,43 +186,30 @@ int main(int argc, char* argv[]) {
 	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_roller->SetFriction(roller_friction);
 
-	InitObject(
-			ROLLER,
-			1,
-			ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius),
-			roller_quat,
-			material_roller,
-			true,
-			false,
-			-20,
-			-20);
+	InitObject(ROLLER, 10, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius), roller_quat, material_roller, true, false, -20, -20);
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
-	//int3 num_per_dir = I3(5, 6, 10);
+	//num_per_dir = I3(5, 6, 10);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius + particle_std_dev * 2));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addVolume(R3(0, 1.35, 0), SPHERE, num_per_dir, R3(0));
-	//addPerturbedLayer(R3(0, 5, 0), CYLINDER, R3(particle_radius), num_per_dir, R3(0, 0, 0), .01, 1, 0, 0, R3(0, -4, 0), (ChSystemGPU*) system_gpu, 0);
-//	/real3 origin, ShapeType type, real3 rad, int3 num_per_dir, real3 percent_perturbation, real mass, real mu, real cohesion, real3 vel, ChSystemGPU* mSys
+	layer_gen.addPerturbedVolume(R3(0, 1.35, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
-
-
-	//tbb::task_scheduler_init init(7);
-
 	//////Rendering specific stuff:
-//	ChOpenGLManager * window_manager = new ChOpenGLManager();
-//	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-//	openGLView.render_camera->camera_pos = Vector(-50, 0, -50);
-//	openGLView.render_camera->look_at = Vector(0, 0, 0);
-//	openGLView.SetCustomCallback(RunTimeStep);
-//	openGLView.StartSpinning(window_manager);
-//	window_manager->CallGlutMainLoop();
+	if (visualize) {
+		ChOpenGLManager * window_manager = new ChOpenGLManager();
+		ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
+		openGLView.render_camera->camera_pos = Vector(-50, 0, -50);
+		openGLView.render_camera->look_at = Vector(0, 0, 0);
+		openGLView.SetCustomCallback(RunTimeStep);
+		openGLView.StartSpinning(window_manager);
+		window_manager->CallGlutMainLoop();
+	}
 	//=========================================================================================================
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
@@ -248,19 +221,18 @@ int main(int argc, char* argv[]) {
 		cout << "step " << i;
 		cout << " Residual: " << ((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->GetResidual();
 		cout << " ITER: " << ((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations();
-		cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << system_gpu->GetNbodies() << " contacts= " << system_gpu->GetNcontacts()
-				<< " step time=" << system_gpu->GetTimerStep() << " lcp time=" << system_gpu->GetTimerLcp() << " CDbroad time="
-				<< system_gpu->GetTimerCollisionBroad() << " CDnarrow time=" << system_gpu->GetTimerCollisionNarrow() << " Iterations="
+		cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << system_gpu->GetNbodies() << " contacts= " << system_gpu->GetNcontacts() << " step time=" << system_gpu->GetTimerStep()
+				<< " lcp time=" << system_gpu->GetTimerLcp() << " CDbroad time=" << system_gpu->GetTimerCollisionBroad() << " CDnarrow time=" << system_gpu->GetTimerCollisionNarrow() << " Iterations="
 				<< ((ChLcpSolverGPU*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
 		RunTimeStep(system_gpu, i);
-		int save_every = 1.0 / timestep / 6000.0; //save data every n steps
+		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
 		if (i % save_every == 0) {
 			stringstream ss;
 			cout << "Frame: " << file << endl;
 			ss << data_folder << "/" << file << ".txt";
-			DumpObjects(system_gpu, ss.str(),",",false);
+			DumpObjects(system_gpu, ss.str(), ",", false);
 			//output.ExportData(ss.str());
 			file++;
 		}
