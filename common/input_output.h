@@ -1,47 +1,190 @@
 #include "common.h"
 
+class CSVGen {
+	public:
+
+		CSVGen() {
+			delim = ",";
+		}
+		~CSVGen() {
+		}
+
+		void OpenFile(string filename) {
+			ofile.open(filename.c_str());
+		}
+
+		void CloseFile() {
+
+			ofile << ss.str();
+
+			ofile.close();
+		}
+		template<class T>
+		void operator<<(T token) {
+			WriteToken(token);
+		}
+		void WriteToken(real token) {
+			ss << token << delim;
+		}
+		void WriteToken(real2 token) {
+			ss << token.x << delim << token.y << delim;
+		}
+		void WriteToken(real3 token) {
+			ss << token.x << delim << token.y << delim << token.z << delim;
+		}
+		void WriteToken(real4 token) {
+			ss << token.w << delim << token.x << delim << token.y << delim << token.z << delim;
+		}
+		void WriteToken(string token) {
+			ss << token << delim;
+		}
+		void Endline() {
+			ss << endl;
+		}
+
+		string delim;
+		ofstream ofile;
+		stringstream ss;
+
+};
+
 template<class T>
 void DumpObjects(T* mSys, string filename, string delim = ",", bool dump_vel_rot = false) {
-	ofstream ofile(filename.c_str());
+	CSVGen csv_output;
+	csv_output.OpenFile(filename.c_str());
 
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
-		ChBody* abody =  mSys->Get_bodylist()->at(i);
+		ChBody* abody = mSys->Get_bodylist()->at(i);
 		if (abody->IsActive() == true) {
-			ofile << abody->GetPos().x << delim << abody->GetPos().y << delim << abody->GetPos().z << delim;
-			ofile << abody->GetRot().e0 << delim << abody->GetRot().e1 << delim << abody->GetRot().e2 << delim << abody->GetRot().e3;
+
+			csv_output << R3(abody->GetPos().x, abody->GetPos().y, abody->GetPos().z);
+			csv_output << R4(abody->GetRot().e0, abody->GetRot().e1, abody->GetRot().e2, abody->GetRot().e3);
+
 			if (!dump_vel_rot) {
-				ofile << delim << endl;
+				csv_output.Endline();
 			}
 			if (dump_vel_rot) {
-				ofile << delim << abody->GetPos_dt().x << delim << abody->GetPos_dt().y << delim << abody->GetPos_dt().z << delim;
-				ofile << abody->GetWvel_loc().x << delim << abody->GetWvel_loc().y << delim << abody->GetWvel_loc().z << delim << endl;
+				csv_output << R3(abody->GetPos_dt().x, abody->GetPos_dt().y, abody->GetPos_dt().z);
+				csv_output << R3(abody->GetWvel_loc().x, abody->GetWvel_loc().y, abody->GetWvel_loc().z);
+
+				csv_output.Endline();
+
 			}
 		}
 	}
+	csv_output.CloseFile();
 }
 template<class T>
 void DumpAllObjects(T* mSys, string filename, string delim = ",", bool dump_vel_rot = false) {
-	ofstream ofile(filename.c_str());
-
+	CSVGen csv_output;
+	csv_output.OpenFile(filename.c_str());
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
-		ChBody* abody =  mSys->Get_bodylist()->at(i);
-		ofile << abody->GetPos().x << delim << abody->GetPos().y << delim << abody->GetPos().z << delim;
-		ofile << abody->GetRot().e0 << delim << abody->GetRot().e1 << delim << abody->GetRot().e2 << delim << abody->GetRot().e3;
+		ChBody* abody = mSys->Get_bodylist()->at(i);
+		csv_output << R3(abody->GetPos().x, abody->GetPos().y, abody->GetPos().z);
+		csv_output << R4(abody->GetRot().e0, abody->GetRot().e1, abody->GetRot().e2, abody->GetRot().e3);
+
 		if (!dump_vel_rot) {
-			ofile << delim << endl;
+			csv_output.Endline();
 		}
 		if (dump_vel_rot) {
-			ofile << delim << abody->GetPos_dt().x << delim << abody->GetPos_dt().y << delim << abody->GetPos_dt().z << delim;
-			ofile << abody->GetWvel_loc().x << delim << abody->GetWvel_loc().y << delim << abody->GetWvel_loc().z << delim << endl;
+			csv_output << R3(abody->GetPos_dt().x, abody->GetPos_dt().y, abody->GetPos_dt().z);
+			csv_output << R3(abody->GetWvel_loc().x, abody->GetWvel_loc().y, abody->GetWvel_loc().z);
+
+			csv_output.Endline();
+
 		}
 	}
+	csv_output.CloseFile();
+}
+void DumpAllObjectsWithGeometryPovray(ChSystemGPU* mSys, string filename) {
+
+	CSVGen csv_output;
+	csv_output.OpenFile(filename.c_str());
+	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
+		ChBody* abody = mSys->Get_bodylist()->at(i);
+		const Vector pos = abody->GetPos();
+		Quaternion rot = abody->GetRot();
+		Vector pos_final, rad_final;
+		ShapeType type = SPHERE;
+
+		for (int j = 0; j < abody->GetAssets().size(); j++) {
+			ChSharedPtr<ChAsset> asset = abody->GetAssets().at(j);
+			if (asset.IsType<ChSphereShape>()) {
+				ChSphereShape * sphere_shape = ((ChSphereShape *) (asset.get_ptr()));
+				float radius = sphere_shape->GetSphereGeometry().rad;
+				Vector center = sphere_shape->GetSphereGeometry().center;
+				center = rot.Rotate(center);
+				pos_final = pos + center;
+				rad_final.x = radius;
+				rad_final.y = radius;
+				rad_final.z = radius;
+				type = SPHERE;
+			}
+
+			else if (asset.IsType<ChEllipsoidShape>()) {
+
+				ChEllipsoidShape * ellipsoid_shape = ((ChEllipsoidShape *) (asset.get_ptr()));
+				rad_final = ellipsoid_shape->GetEllipsoidGeometry().rad;
+				Vector center = ellipsoid_shape->GetEllipsoidGeometry().center;
+				center = rot.Rotate(center);
+
+				pos_final = pos + center;
+
+				type = ELLIPSOID;
+			} else if (asset.IsType<ChBoxShape>()) {
+				ChBoxShape * box_shape = ((ChBoxShape *) (asset.get_ptr()));
+				rad_final = box_shape->GetBoxGeometry().Size;
+				pos_final = pos;
+				type = BOX;
+			} else if (asset.IsType<ChCylinderShape>()) {
+				ChCylinderShape * cylinder_shape = ((ChCylinderShape *) (asset.get_ptr()));
+				double rad = cylinder_shape->GetCylinderGeometry().rad;
+				rad_final.x = rad;
+				rad_final.y = cylinder_shape->GetCylinderGeometry().p2.y - cylinder_shape->GetCylinderGeometry().p1.y;
+				rad_final.z = rad;
+				pos_final = pos;
+				type = CYLINDER;
+			}
+
+			csv_output << R3(pos_final.x, pos_final.y, pos_final.z);
+			csv_output << R4(rot.e0, rot.e1, rot.e2, rot.e3);
+
+			if (asset.IsType<ChSphereShape>()) {
+				csv_output << type;
+				csv_output << rad_final.x;
+				csv_output.Endline();
+			} else if (asset.IsType<ChEllipsoidShape>()) {
+				csv_output << type;
+				csv_output << R3(rad_final.x, rad_final.y, rad_final.z);
+				csv_output.Endline();
+			} else if (asset.IsType<ChBoxShape>()) {
+				csv_output << type;
+				csv_output << R3(rad_final.x, rad_final.y, rad_final.z);
+				csv_output.Endline();
+			} else if (asset.IsType<ChCylinderShape>()) {
+				csv_output << type;
+				csv_output << R2(rad_final.x, rad_final.y);
+				csv_output.Endline();
+			} else if (asset.IsType<ChConeShape>()) {
+
+				csv_output << type;
+				csv_output << R2(rad_final.x, rad_final.y);
+				csv_output.Endline();
+			} else {
+				csv_output << type;
+				csv_output << 1;
+				csv_output.Endline();
+			}
+		}
+	}
+	csv_output.CloseFile();
 }
 
 void DumpAllObjectsWithGeometry(ChSystemGPU* mSys, string filename, string delim = ",") {
 	ofstream ofile(filename.c_str());
 
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
-		ChBody* abody =  mSys->Get_bodylist()->at(i);
+		ChBody* abody = mSys->Get_bodylist()->at(i);
 		const Vector pos = abody->GetPos();
 		Quaternion rot = abody->GetRot();
 		Vector pos_final, rad_final;
@@ -92,21 +235,21 @@ void DumpAllObjectsWithGeometry(ChSystemGPU* mSys, string filename, string delim
 				group = "g4";
 			}
 
-
-
 			ofile << group << delim << i << delim << pos_final.x << delim << pos_final.y << delim << pos_final.z << delim;
 			//ofile << type << delim << pos_final.x << delim << pos_final.y << delim << pos_final.z << delim;
 			ofile << rot.e0 << delim << rot.e1 << delim << rot.e2 << delim << rot.e3 << delim;
 			//ofile <<type<< delim<< rad_final.x << delim << rad_final.y << delim << rad_final.z<<delim<<endl;
 
 			if (asset.IsType<ChSphereShape>()) {
-				ofile <<type<< delim<< rad_final.x << delim<<endl;
-			}else if (asset.IsType<ChEllipsoidShape>()) {
-				ofile <<type<< delim<< rad_final.x << delim << rad_final.y << delim << rad_final.z<<delim<<endl;
+				ofile << type << delim << rad_final.x << delim << endl;
+			} else if (asset.IsType<ChEllipsoidShape>()) {
+				ofile << type << delim << rad_final.x << delim << rad_final.y << delim << rad_final.z << delim << endl;
 			} else if (asset.IsType<ChBoxShape>()) {
-				ofile <<type<< delim<< rad_final.x << delim << rad_final.y << delim << rad_final.z<<delim<<endl;
+				ofile << type << delim << rad_final.x << delim << rad_final.y << delim << rad_final.z << delim << endl;
 			} else if (asset.IsType<ChCylinderShape>()) {
-				ofile <<type<< delim<< rad_final.x << delim << rad_final.y << delim <<endl;
+				ofile << type << delim << rad_final.x << delim << rad_final.y << delim << endl;
+			} else if (asset.IsType<ChConeShape>()) {
+				ofile << type << delim << rad_final.x << delim << rad_final.y << delim << endl;
 			}
 		}
 	}

@@ -8,7 +8,7 @@ class ParticleGenerator {
 			use_normal_dist = false;
 			use_density = false;
 
-			material=ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+			material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 		}
 
 		void SetMass(real m) {
@@ -18,6 +18,7 @@ class ParticleGenerator {
 		void SetDensity(real d) {
 			density = d;
 			use_density = true;
+
 		}
 
 		void SetRadius(real3 r) {
@@ -89,8 +90,17 @@ class ParticleGenerator {
 							r.y = distribution(generator);
 							r.z = distribution(generator);
 						}
-						if(use_density){
-							mass = density*4.0/3.0*PI*r.x*r.x*r.x;
+						if (use_density) {
+							if (type == SPHERE) {
+								mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x;
+							} else if (type == BOX) {
+								mass = density * r.x * r.y * r.z * 8;
+							} else if (type == ELLIPSOID) {
+								mass = density * 4.0 / 3.0 * PI * r.x * r.y * r.z;
+							} else {
+								mass = 1;
+
+							}
 						}
 						InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, counter);
 

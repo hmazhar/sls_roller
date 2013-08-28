@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
 	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_roller->SetFriction(roller_friction);
 
-	InitObject(ROLLER, 10, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius), roller_quat, material_roller, true, false, -20, -20);
+	InitObject(ROLLER, 1000, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius), roller_quat, material_roller, true, false, -20, -20);
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
