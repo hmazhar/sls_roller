@@ -17,7 +17,7 @@ class ParticleGenerator {
 
 		void SetDensity(real d) {
 			density = d;
-
+			use_density = true;
 		}
 
 		void SetRadius(real3 r) {
