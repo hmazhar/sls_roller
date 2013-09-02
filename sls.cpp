@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addPerturbedVolume(R3(0, 1.35, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.addPerturbedVolume(R3(0, 1.45, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
