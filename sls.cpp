@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 			stringstream ss;
 			cout << "Frame: " << file << endl;
 			ss << data_folder << "/" << file << ".txt";
-			DumpObjects(system_gpu, ss.str(), ",", false);
+			DumpAllObjectsWithGeometryPovray(system_gpu, ss.str());
 			//output.ExportData(ss.str());
 			file++;
 		}
