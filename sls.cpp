@@ -30,7 +30,7 @@ real particle_density = 0.446;
 real particle_layer_thickness = particle_radius * 4;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
-real timestep = .00001;			//step size
+real timestep = .00002;			//step size
 real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
@@ -94,13 +94,6 @@ int main(int argc, char* argv[]) {
 	//string solver_string = "ACCELERATED_PROJECTED_GRADIENT_DESCENT";
 	//=========================================================================================================
 	ChSystemGPU * system_gpu = new ChSystemGPU;
-	ChLcpSystemDescriptorGPU *mdescriptor = new ChLcpSystemDescriptorGPU();
-	ChContactContainerGPU *mcontactcontainer = new ChContactContainerGPU();
-	//ChCollisionSystemBulletGPU *mcollisionengine = new ChCollisionSystemBulletGPU();
-	ChCollisionSystemGPU *mcollisionengine = new ChCollisionSystemGPU();
-	system_gpu->ChangeLcpSystemDescriptor(mdescriptor);
-	system_gpu->ChangeContactContainer(mcontactcontainer);
-	system_gpu->ChangeCollisionSystem(mcollisionengine);
 	system_gpu->SetIntegrationType(ChSystem::INT_ANITESCU);
 
 	//=========================================================================================================
@@ -115,23 +108,11 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(3000);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	mcollisionengine->setBinsPerAxis(R3(100, 40, 500));
-	mcollisionengine->setBodyPerBin(100, 50);
+	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(R3(100, 40, 500));
+	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 
-	//=========================================================================================================
-	ChMitsubaRender output(system_gpu);
-	output.SetIntegrator("photonmapper");
-	output.SetIntegratorOption("integer", "maxDepth", "32");
-	output.SetFilm("ldrfilm");
-	output.SetFilmOption("integer", "height", "1200");
-	output.SetFilmOption("integer", "width", "1920");
-	output.camera_target = ChVector<>(0, -5, 0);
-	output.camera_origin = ChVector<>(0, -5, -40);
-	output.camera_up = ChVector<>(0, 1, 0);
-	output.SetDataFolder(data_folder);
-	output.ExportScript("test.xml");
 	//=========================================================================================================
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
@@ -192,9 +173,10 @@ int main(int argc, char* argv[]) {
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
 	//num_per_dir = I3(5, 6, 10);
+	num_per_dir = I3(110, 8,880);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
-	layer_gen.SetRadius(R3(particle_radius + particle_std_dev * 2));
+	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
 	layer_gen.addPerturbedVolume(R3(0, 1.35, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
