@@ -30,7 +30,7 @@ real particle_density = 0.446;
 real particle_layer_thickness = particle_radius * 6;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
-real timestep = .00002;			//step size
+real timestep = .00001;			//step size
 real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
