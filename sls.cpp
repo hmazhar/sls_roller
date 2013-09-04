@@ -27,7 +27,7 @@ real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_mass = .05;
 real particle_density = 0.446;
-real particle_layer_thickness = particle_radius * 4;
+real particle_layer_thickness = particle_radius * 6;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
 real timestep = .00002;			//step size
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(0);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(0);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(3000);
+	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(R3(100, 40, 500));
