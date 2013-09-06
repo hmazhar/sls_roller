@@ -1,5 +1,10 @@
 #include "common.h"
 #include <random>
+
+enum MixType {
+	MIX_SPHERE, MIX_ELLIPSOID, MIX_DOUBLESPHERE
+};
+
 class ParticleGenerator {
 	public:
 		ParticleGenerator(ChSystemGPU* system) {
@@ -11,6 +16,7 @@ class ParticleGenerator {
 			use_normal_friction = false;
 			use_normal_cohesion = false;
 			material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+			use_mixture = false;
 		}
 
 		void SetMass(real m) {
@@ -59,70 +65,97 @@ class ParticleGenerator {
 				addHCPSheet(I2(grid.x, grid.z), new_origin, active, vel);
 			}
 		}
+		void createBody(ChSharedBodyPtr body, real3 pos, real mass) {
+
+			if (use_common_material) {
+				InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
+			} else {
+				InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, -1, mSys->GetNbodiesTotal());
+				if (use_normal_friction) {
+					body->GetMaterialSurface()->SetFriction(distribution_friction->operator()(generator));
+				} else {
+					body->GetMaterialSurface()->SetFriction(material->GetSfriction());
+				}
+				if (use_normal_cohesion) {
+					body->GetMaterialSurface()->SetCohesion(distribution_cohesion->operator()(generator));
+				} else {
+					body->GetMaterialSurface()->SetCohesion(material->GetCohesion());
+				}
+			}
+		}
+
+		void computeMassType(ShapeType type, real3 r) {
+			if (use_density) {
+				if (type == SPHERE) {
+					mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x;
+				} else if (type == BOX) {
+					mass = density * r.x * r.y * r.z * 8;
+				} else if (type == ELLIPSOID) {
+					mass = density * 4.0 / 3.0 * PI * r.x * r.y * r.z;
+				} else {
+					mass = 1;
+				}
+			}
+		}
+		void computeMassMixture(MixType type, real3 r) {
+
+			if (use_density) {
+				if (type == MIX_SPHERE) {
+					mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x;
+				} else if (type == MIX_DOUBLESPHERE) {
+					mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x * 2;
+				} else if (type == MIX_ELLIPSOID) {
+					mass = density * 4.0 / 3.0 * PI * r.x * r.y * r.z;
+				} else {
+					mass = 1;
+				}
+			}
+		}
+		void computeRadius(real3 & r) {
+
+			if (use_normal_dist) {
+				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 3 * std_dev), mean - 3 * std_dev);
+				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 3 * std_dev), mean - 3 * std_dev);
+				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 3 * std_dev), mean - 3 * std_dev);
+			} else {
+				r = radius;
+			}
+		}
+
+		void computePerturbedPos(real3 percent_perturbation, int3 num_per_dir, int3 index, real3 origin, real3 & pos) {
+			real3 r = radius + R3(3 * std_dev) * use_normal_dist;
+
+			real3 a = r * percent_perturbation;
+			real3 d = a + 2 * r;     //compute cell length
+			real3 dp;
+
+			dp.x = rand() % 10000 / 10000.0 * a.x - a.x / 2.0;
+			dp.y = rand() % 10000 / 10000.0 * a.y - a.y / 2.0;
+			dp.z = rand() % 10000 / 10000.0 * a.z - a.z / 2.0;
+
+			pos.x = index.x * d.x - num_per_dir.x * d.x * .5;
+			pos.y = index.y * d.y - num_per_dir.y * d.y * .5;
+			pos.z = index.z * d.z - num_per_dir.z * d.z * .5;
+
+			pos += dp + origin + r;
+
+		}
 
 		void addPerturbedVolume(real3 origin, ShapeType type, int3 num_per_dir, real3 percent_perturbation, real3 vel, bool random = false) {
 
 			int counter = 0;
-			std::normal_distribution<double> distribution(mean, std_dev);
-			std::normal_distribution<double> distribution_friction(mean_friction, std_dev_friction);
-			std::normal_distribution<double> distribution_cohesion(mean_cohesion, std_dev_cohesion);
 
 			for (int i = 0; i < num_per_dir.x; i++) {
 				for (int j = 0; j < num_per_dir.y; j++) {
 					for (int k = 0; k < num_per_dir.z; k++) {
-						real3 r = radius;
-						if (use_normal_dist) {
-							r = r + R3(3 * std_dev);
-						}
-
-						real3 a = r * percent_perturbation;
-						real3 d = a + 2 * r;     //compute cell length
-						real3 dp, pos;
+						real3 r = R3(0), pos = R3(0);
+						computePerturbedPos(percent_perturbation, num_per_dir, I3(i, j, k), origin, pos);
+						computeRadius(r);
+						computeMassType(type, r);
 
 						body = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 
-						dp.x = rand() % 10000 / 10000.0 * a.x - a.x / 2.0;
-						dp.y = rand() % 10000 / 10000.0 * a.y - a.y / 2.0;
-						dp.z = rand() % 10000 / 10000.0 * a.z - a.z / 2.0;
-
-						pos.x = i * d.x - num_per_dir.x * d.x * .5;
-						pos.y = j * d.y - num_per_dir.y * d.y * .5;
-						pos.z = k * d.z - num_per_dir.z * d.z * .5;
-
-						pos += dp + origin + r;
-
-						if (use_normal_dist) {
-							r.x = fmaxf(fminf(distribution(generator), radius.x + 3 * std_dev), mean - 3 * std_dev);
-							r.y = fmaxf(fminf(distribution(generator), radius.y + 3 * std_dev), mean - 3 * std_dev);
-							r.z = fmaxf(fminf(distribution(generator), radius.z + 3 * std_dev), mean - 3 * std_dev);
-						}
-						if (use_density) {
-							if (type == SPHERE) {
-								mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x;
-							} else if (type == BOX) {
-								mass = density * r.x * r.y * r.z * 8;
-							} else if (type == ELLIPSOID) {
-								mass = density * 4.0 / 3.0 * PI * r.x * r.y * r.z;
-							} else {
-								mass = 1;
-
-							}
-						}
-						if (use_common_material) {
-							InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
-						} else {
-							InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, -1, mSys->GetNbodiesTotal());
-							if (use_normal_friction) {
-								body->GetMaterialSurface()->SetFriction(distribution_friction(generator));
-							} else {
-								body->GetMaterialSurface()->SetFriction(material->GetSfriction());
-							}
-							if (use_normal_cohesion) {
-								body->GetMaterialSurface()->SetCohesion(distribution_cohesion(generator));
-							} else {
-								body->GetMaterialSurface()->SetCohesion(material->GetCohesion());
-							}
-						}
+						createBody(body, pos, mass);
 
 						AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 
@@ -137,11 +170,49 @@ class ParticleGenerator {
 		void addVolume(real3 origin, ShapeType type, int3 num_per_dir, real3 vel) {
 			addPerturbedVolume(origin, type, num_per_dir, R3(0, 0, 0), vel, false);
 		}
+
+		void addPerturbedVolumeMixture(real3 origin, int3 num_per_dir, real3 percent_perturbation, real3 vel, bool random = false) {
+			int counter = 0;
+			int mix_type = 0;
+			for (int i = 0; i < num_per_dir.x; i++) {
+				for (int j = 0; j < num_per_dir.y; j++) {
+					for (int k = 0; k < num_per_dir.z; k++) {
+						real3 r = R3(0), pos = R3(0);
+						computePerturbedPos(percent_perturbation, num_per_dir, I3(i, j, k), origin, pos);
+						computeRadius(r);
+						computeMassMixture(mixture[mix_type], r);
+
+						body = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
+
+						createBody(body, pos, mass);
+
+						if (mixture[mix_type] == MIX_SPHERE) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+						}
+						else if(mixture[mix_type] == MIX_DOUBLESPHERE)
+						{
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x/2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(r.x/2.0, 0, 0), Quaternion(1, 0, 0, 0));
+						}
+						else if(mixture[mix_type] == MIX_ELLIPSOID)
+						{
+							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+						}
+						mix_type++;
+						if (mix_type > mixture.size()) {
+							mix_type = 0;
+						}
+
+						FinalizeObject(body, (ChSystemGPU *) mSys);
+						body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
+						counter++;
+					}
+				}
+			}
+		}
+
 		void addSnowball(real3 origin, ShapeType type, real rad, real3 vel) {
 			int3 grid = I3(rad / radius.x * 2, rad / radius.x * 2, rad / radius.x * 2);
-			std::normal_distribution<double> distribution(mean, std_dev);
-			std::normal_distribution<double> distribution_friction(mean_friction, std_dev_friction);
-			std::normal_distribution<double> distribution_cohesion(mean_cohesion, std_dev_cohesion);
 
 			real offset_x = 0, offset_z = 0, height = 0;
 			for (int j = 0; j < grid.y; j++) {
@@ -168,30 +239,10 @@ class ParticleGenerator {
 
 							if (length(pos) < rad) {
 								real3 r = radius;
-								if (use_normal_dist) {
-									r.x = fmaxf(distribution(generator), mean - 2 * std_dev);
-									r.y = fmaxf(distribution(generator), mean - 2 * std_dev);
-									r.z = fmaxf(distribution(generator), mean - 2 * std_dev);
-								}
-
+								computeRadius(r);
 								pos += origin;
-								if (use_common_material) {
-									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
-								} else {
-									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, -1, mSys->GetNbodiesTotal());
-									if (use_normal_friction) {
-										body->GetMaterialSurface()->SetFriction(distribution_friction(generator));
-									} else {
-										body->GetMaterialSurface()->SetFriction(material->GetSfriction());
-									}
-									if (use_normal_cohesion) {
-										body->GetMaterialSurface()->SetCohesion(distribution_cohesion(generator));
-									} else {
-										body->GetMaterialSurface()->SetCohesion(material->GetCohesion());
-									}
-									body->GetMaterialSurface()->SetCompliance(material->GetCompliance());
 
-								}
+								createBody(body, pos, mass);
 
 								AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 
@@ -210,7 +261,7 @@ class ParticleGenerator {
 			mean = _mean;
 			std_dev = _std_dev;
 			use_normal_dist = true;
-
+			distribution = new std::normal_distribution<double>(mean, std_dev);
 		}
 
 		void UseNormalFriction(real _mean, real _std_dev) {
@@ -218,6 +269,7 @@ class ParticleGenerator {
 			use_normal_friction = true;
 			mean_friction = _mean;
 			std_dev_friction = _std_dev;
+			distribution_friction = new std::normal_distribution<double>(mean_friction, std_dev_friction);
 
 		}
 		void UseNormalCohesion(real _mean, real _std_dev) {
@@ -225,6 +277,13 @@ class ParticleGenerator {
 			use_normal_cohesion = true;
 			mean_cohesion = _mean;
 			std_dev_cohesion = _std_dev;
+			distribution_cohesion = new std::normal_distribution<double>(mean_cohesion, std_dev_cohesion);
+		}
+
+		void AddMixtureType(MixType type) {
+			use_mixture = true;
+			mixture.push_back(type);
+
 		}
 
 		std::default_random_engine generator;
@@ -246,5 +305,12 @@ class ParticleGenerator {
 		real mean_cohesion, std_dev_cohesion;
 
 		vector<real3> position;
+
+		bool use_mixture;
+		vector<MixType> mixture;
+
+		std::normal_distribution<double>* distribution;
+		std::normal_distribution<double> *distribution_friction;
+		std::normal_distribution<double> *distribution_cohesion;
 };
 
