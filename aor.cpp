@@ -24,7 +24,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .00005;
+real timestep = .00002;
 real time_to_run = .6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -32,7 +32,7 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 100;     //add particles every n steps
+int particles_every = 250;     //add particles every n steps
 
 int max_iteration = 20;
 int tolerance = .1;
@@ -85,20 +85,23 @@ int main(int argc, char* argv[]) {
 	omp_set_num_threads(4);
 	srand(1);
 
-	cout << "Density, Radius, Friction_Sphere,Cohesion_Sphere,  Friction_Plate, Data Folder all_three_kinds, particle configuration" << endl;
-	if (argc == 9) {
+	if (argc == 2) {
+		data_folder = argv[1];
+	}
+
+	cout << "Density, Radius, Friction_Sphere,Cohesion_Sphere,  Friction_Plate, Data Folder" << endl;
+	if (argc == 7) {
 		particle_density = atof(argv[1]);
 		particle_radius = atof(argv[2]);
 		particle_friction = atof(argv[3]);
 		particle_cohesion = atof(argv[4]);
 		plate_friction = atof(argv[5]);
 		data_folder = argv[6];
-		all_three_kinds = atoi(argv[7]);
-		particle_configuration = atoi(argv[8]);
+		//all_three_kinds = atoi(argv[7]);
+		//particle_configuration = atoi(argv[8]);
 	}
 
-	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << plate_friction << " " << data_folder << " " << " " << all_three_kinds << " " << particle_configuration
-			<< endl;
+	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
 	//=========================================================================================================
 	ChSystemGPU * system_gpu = new ChSystemGPU;
@@ -268,9 +271,8 @@ int main(int argc, char* argv[]) {
 		current_time += timestep;
 
 	}
-	stringstream ss;
-	ss << data_folder << "/" << particle_friction << "_" << particle_cohesion << "_" << plate_friction << ".txt";
-
+	//stringstream ss;
+	//ss << data_folder << "/" << particle_friction << "_" << particle_cohesion << "_" << plate_friction << ".txt";
 	//DumpAllObjectsWithGeometry(system_gpu, ss.str());
 	return 0;
 }
