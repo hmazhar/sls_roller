@@ -15,7 +15,7 @@ real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_density = .446;
 real particle_friction = .5;
-real particle_cohesion = 0;
+real particle_cohesion = 1e-5;
 Vector particle_initial_vel = Vector(0, -2.5, 0);     //initial velocity
 
 real container_width = 5.0;
@@ -54,16 +54,13 @@ real start_height = 1;
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 
-	ChSharedPtr<ChMaterialSurface> material;
-	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(particle_friction);
-	material->SetCohesion(particle_cohesion);
 
 	ParticleGenerator layer_gen(((ChSystemGPU*) mSys));
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
+	layer_gen.material->SetCohesion(particle_cohesion);
 	if (all_three_kinds) {
 		layer_gen.AddMixtureType(MIX_SPHERE);
 		layer_gen.AddMixtureType(MIX_ELLIPSOID);
