@@ -46,6 +46,9 @@ include_directories(${INC_DIRS})
 IF (ENABLE_UNIT_GPU)
     ADD_EXECUTABLE(sls sls.cpp)		
     TARGET_LINK_LIBRARIES(sls	${CHRONO_LIB} ${GPU_LIBS})
+
+    ADD_EXECUTABLE(aor aor.cpp)		
+    TARGET_LINK_LIBRARIES(aor	${CHRONO_LIB} ${GPU_LIBS})
    
 ENDIF(ENABLE_UNIT_GPU)
 
