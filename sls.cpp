@@ -6,17 +6,17 @@ ChVector<> lpos(0, 0, 0);
 ChQuaternion<> quat(1, 0, 0, 0);
 
 //all dimensions are in millimeters, milligrams
-real container_width = 10;		//width of area with particles
-real container_length = 50;		//length of area that roller will go over		1194mm maximum
-real container_thickness = 1;     //thickness of container walls
-real container_height = 5;		//height of the outer walls
+real container_width = 5;		//width of area with particles
+real container_length = 25;		//length of area that roller will go over		1194mm maximum
+real container_thickness = .25;     //thickness of container walls
+real container_height = 2;		//height of the outer walls
 real container_friction = 0;
 real floor_friction = .2;
 real spacer_width = 1;
 real spacer_height = 1;
 
 real roller_overlap = 1; 		//amount that roller goes over the container area
-real roller_length = 3;			//length of the roller
+real roller_length = 2.5-.25;			//length of the roller
 real roller_radius = 76.2 / 2.0;			//radius of roller
 real roller_omega = 0;
 real roller_velocity = -127;
@@ -30,7 +30,7 @@ real particle_density = 0.446;
 real particle_layer_thickness = particle_radius * 6;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
-real timestep = .00001;			//step size
+real timestep = .00002;			//step size
 real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(R3(100, 40, 500));
+	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(R3(40, 20, 200));
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
@@ -130,34 +130,34 @@ int main(int argc, char* argv[]) {
 	material_plate = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_plate->SetFriction(floor_friction);
 
-	InitObject(PLATE, 1, ChVector<>(0, 0, 0), quat, material_plate, true, true, -1000, -20000);
+	InitObject(PLATE, 100000, ChVector<>(0, 0, 0), quat, material_plate, true, true, -20, -20);
 
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material->SetFriction(container_friction);
 
-	InitObject(L, 100000, Vector(-container_width + container_thickness, container_height, 0), quat, material, true, true, -20, -20);
-	InitObject(R, 100000, Vector(container_width - container_thickness, container_height, 0), quat, material, true, true, -20, -20);
-	InitObject(F, 100000, Vector(0, container_height, -container_length + container_thickness), quat, material, true, true, -20, -20);
-	InitObject(B, 100000, Vector(0, container_height, container_length - container_thickness), quat, material, true, true, -20, -20);
-	InitObject(SPACER_L, 100000, Vector(-container_width + container_thickness * 2 + spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
-	InitObject(SPACER_R, 100000, Vector(container_width - container_thickness * 2 - spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
+	//InitObject(L, 100000, Vector(-container_width + container_thickness, container_height, 0), quat, material, true, true, -20, -20);
+	//InitObject(R, 100000, Vector(container_width - container_thickness, container_height, 0), quat, material, true, true, -20, -20);
+	//InitObject(F, 100000, Vector(0, container_height, -container_length + container_thickness), quat, material, true, true, -20, -20);
+	//InitObject(B, 100000, Vector(0, container_height, container_length - container_thickness), quat, material, true, true, -20, -20);
+	//InitObject(SPACER_L, 100000, Vector(-container_width + container_thickness * 2 + spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
+	//InitObject(SPACER_R, 100000, Vector(container_width - container_thickness * 2 - spacer_width, container_thickness + spacer_height, 0), quat, material, true, true, -20, -20);
 
 	AddCollisionGeometry(PLATE, BOX, ChVector<>(container_width, container_thickness, container_length), lpos, quat);
-	AddCollisionGeometry(L, BOX, Vector(container_thickness, container_height, container_length), lpos, quat);
-	AddCollisionGeometry(R, BOX, Vector(container_thickness, container_height, container_length), lpos, quat);
-	AddCollisionGeometry(F, BOX, Vector(container_width, container_height, container_thickness), lpos, quat);
-	AddCollisionGeometry(B, BOX, Vector(container_width, container_height, container_thickness), lpos, quat);
-	AddCollisionGeometry(SPACER_L, BOX, Vector(spacer_width, spacer_height, container_length), lpos, quat);
-	AddCollisionGeometry(SPACER_R, BOX, Vector(spacer_width, spacer_height, container_length), lpos, quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(-container_width + container_thickness, container_height, 0), quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length),  Vector(container_width - container_thickness, container_height, 0), quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, -container_length + container_thickness), quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, container_length - container_thickness), quat);
+	//AddCollisionGeometry(SPACER_L, BOX, Vector(spacer_width, spacer_height, container_length), lpos, quat);
+	//AddCollisionGeometry(SPACER_R, BOX, Vector(spacer_width, spacer_height, container_length), lpos, quat);
 
 	FinalizeObject(PLATE, (ChSystemGPU *) system_gpu);
-	FinalizeObject(L, (ChSystemGPU *) system_gpu);
-	FinalizeObject(R, (ChSystemGPU *) system_gpu);
-	FinalizeObject(F, (ChSystemGPU *) system_gpu);
-	FinalizeObject(B, (ChSystemGPU *) system_gpu);
-	FinalizeObject(SPACER_L, (ChSystemGPU *) system_gpu);
-	FinalizeObject(SPACER_R, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(L, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(R, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(F, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(B, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(SPACER_L, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(SPACER_R, (ChSystemGPU *) system_gpu);
 
 	ROLLER = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 	ChQuaternion<> roller_quat;
@@ -167,19 +167,22 @@ int main(int argc, char* argv[]) {
 	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_roller->SetFriction(roller_friction);
 
-	InitObject(ROLLER, 1000, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius/6.0), roller_quat, material_roller, true, false, -20, -20);
+	InitObject(ROLLER, 1000, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius/3.0), roller_quat, material_roller, true, false, -20, -20);
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
-	//num_per_dir = I3(5, 6, 10);
-	num_per_dir = I3(110, 8,880);
+	//num_per_dir = I3(1, 8, 440);
+	num_per_dir = I3(74, 8,440);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addPerturbedVolume(R3(0, 1.45, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.addPerturbedVolume(R3(0, .7, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	num_per_dir = I3(74, 30, 50);
+	//num_per_dir = I3(1, 30, 50);
+	layer_gen.addPerturbedVolume(R3(0, 2.8, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
