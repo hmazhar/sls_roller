@@ -30,7 +30,7 @@ real particle_density = 0.446;
 real particle_layer_thickness = particle_radius * 6;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
-real timestep = .00002;			//step size
+real timestep = .00001;			//step size
 real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
@@ -117,6 +117,8 @@ int main(int argc, char* argv[]) {
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 	//=========================================================================================================
+	 ((ChSystemGPU*) system_gpu)->SetAABB(R3(-6,-3,-30), R3(6,5,30));
+
 
 	ChSharedBodyPtr PLATE = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 	ChSharedBodyPtr L = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
