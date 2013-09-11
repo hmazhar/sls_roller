@@ -25,15 +25,14 @@ real wscale = 1;
 
 real gravity = -9810;
 real timestep = .00002;
-real time_to_run = .6;
+real time_to_run = 3;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
 
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 250;     //add particles every n steps
-
+int particles_every = 150;     //add particles every n steps
 int max_iteration = 20;
 int tolerance = .1;
 
@@ -49,7 +48,7 @@ bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
-real start_height = 1;
+real start_height = 0;
 
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
@@ -73,8 +72,8 @@ void RunTimeStep(T* mSys, const int frame) {
 		layer_gen.AddMixtureType(MIX_ELLIPSOID);
 	}
 
-	if (frame % particles_every == 0 && frame * timestep < .4) {
-		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(0));
+	if (frame % particles_every == 0 && frame * timestep < 2.5) {
+		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(0,-20,0));
 	}
 
 }
@@ -119,8 +118,9 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(true);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(solver);
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	mcollisionengine->setBinsPerAxis(R3(100, 30, 100));
+	mcollisionengine->setBinsPerAxis(R3(50, 50, 50));
 	mcollisionengine->setBodyPerBin(100, 50);
+	 ((ChSystemGPU*) system_gpu)->SetAABB(R3(-6,-6,-6), R3(6,4,6));
 
 	//=========================================================================================================
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
 				<< ((ChLcpSolverGPU*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
-		int save_every = 1.0 / timestep / 600.0;     //save data every n steps
+		int save_every = 1.0 / timestep / 30.0;     //save data every n steps
 		RunTimeStep(system_gpu, i);
 		if (i % save_every == 0) {
 			stringstream ss;
