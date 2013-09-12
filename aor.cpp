@@ -71,7 +71,7 @@ void RunTimeStep(T* mSys, const int frame) {
 		layer_gen.AddMixtureType(MIX_ELLIPSOID);
 	}
 
-	if (frame % particles_every == 0 && frame * timestep < 2.5) {
+	if (frame % particles_every == 0 && frame * timestep < 5.5) {
 		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(0,0,0));
 	}
 
