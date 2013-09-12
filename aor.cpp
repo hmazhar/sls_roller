@@ -196,15 +196,21 @@ int main(int argc, char* argv[]) {
 	ChSharedBodyPtr F3 = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 	ChSharedBodyPtr F4 = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
 
+	ChSharedPtr<ChMaterialSurface> material_funnel;
+	material_funnel = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+	material_funnel->SetFriction(plate_friction);
+
+	material_funnel->SetCohesion(-10000);
+
 	ChQuaternion<> quat_r;
 	quat_r.Q_from_AngX(45);
-	InitObject(F1, 100000, Vector(0, plate_height + funnel_height - funnel_width, -funnel_offset), quat_r, material, true, true, -20, -20);
+	InitObject(F1, 100000, Vector(0, plate_height + funnel_height - funnel_width, -funnel_offset), quat_r, material_funnel, true, true, -20, -20);
 	quat_r.Q_from_AngX(-45);
-	InitObject(F2, 100000, Vector(0, plate_height + funnel_height - funnel_width, funnel_offset), quat_r, material, true, true, -20, -20);
+	InitObject(F2, 100000, Vector(0, plate_height + funnel_height - funnel_width, funnel_offset), quat_r, material_funnel, true, true, -20, -20);
 	quat_r.Q_from_AngZ(45);
-	InitObject(F3, 100000, Vector(funnel_offset, plate_height + funnel_height - funnel_width, 0), quat_r, material, true, true, -20, -20);
+	InitObject(F3, 100000, Vector(funnel_offset, plate_height + funnel_height - funnel_width, 0), quat_r, material_funnel, true, true, -20, -20);
 	quat_r.Q_from_AngZ(-45);
-	InitObject(F4, 100000, Vector(-funnel_offset, plate_height + funnel_height - funnel_width, 0), quat_r, material, true, true, -20, -20);
+	InitObject(F4, 100000, Vector(-funnel_offset, plate_height + funnel_height - funnel_width, 0), quat_r, material_funnel, true, true, -20, -20);
 
 	AddCollisionGeometry(F1, BOX, Vector(funnel_width, funnel_thickness, funnel_width), lpos, quat);
 	AddCollisionGeometry(F2, BOX, Vector(funnel_width, funnel_thickness, funnel_width), lpos, quat);
