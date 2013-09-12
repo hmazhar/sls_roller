@@ -25,14 +25,14 @@ real wscale = 1;
 
 real gravity = -9810;
 real timestep = .00002;
-real time_to_run = 3;
+real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
 
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 150;     //add particles every n steps
+int particles_every = 150*2;     //add particles every n steps
 int max_iteration = 20;
 int tolerance = .1;
 
@@ -53,7 +53,6 @@ real start_height = 0;
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 
-
 	ParticleGenerator layer_gen(((ChSystemGPU*) mSys));
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
@@ -73,7 +72,7 @@ void RunTimeStep(T* mSys, const int frame) {
 	}
 
 	if (frame % particles_every == 0 && frame * timestep < 2.5) {
-		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(0,-20,0));
+		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(0,0,0));
 	}
 
 }
