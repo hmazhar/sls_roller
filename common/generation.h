@@ -4,6 +4,77 @@
 enum MixType {
 	MIX_SPHERE, MIX_ELLIPSOID, MIX_DOUBLESPHERE
 };
+class VoronoiSampler {
+	public:
+
+		VoronoiSampler(int seed_p = 200, int seed = 1) {
+			srand(clock());
+			seed_points = seed_p;
+			boundary = .02;
+			counter = 0;
+		}
+
+		void Seed() {
+			for (int i = 0; i < seed_points; i++) {
+				real3 value;
+				value.x = GenerateRandom(min_point.x, max_point.x);
+				value.y = GenerateRandom(min_point.y, max_point.y);
+				value.z = GenerateRandom(min_point.z, max_point.z);
+				points.push_back(value);
+				values.push_back(distribution->operator()(generator));
+			}
+		}
+
+		real GenerateRandom(real min_v, real max_v) {
+
+			real random_v = rand() % 10000 / 10000.0;     //random value 0,1;
+			real value = lerp(min_v, max_v, random_v);
+			return value;
+		}
+
+		void SetSize(real3 min_p, real3 max_p) {
+			min_point = min_p;
+			max_point = max_p;
+		}
+		void SetNormalDist(real mean_, real std_dev_) {
+			mean = mean_;
+			std_dev = std_dev_;
+			distribution = new std::normal_distribution<double>(mean, std_dev);
+		}
+
+		real GetProperty(real3 point) {
+			vector<real> distance(points.size());
+			for (int i = 0; i < seed_points; i++) {
+				distance[i] = length(point - points[i]);
+			}
+			thrust::sort_by_key(distance.begin(), distance.end(), values.begin());
+
+			real bound = fabs(distance[seed_points - 1] - distance[seed_points - 2]);
+
+			if (bound < boundary) {
+				counter++;
+				//cout << counter << endl;
+				return values[seed_points - 1]/10.0;
+			}
+			//cout<<values<<values[seed_points - 1];
+			return values[seed_points - 1];
+		}
+		void SetBoundary(real boundary_t) {
+			boundary = boundary_t;
+		}
+	private:
+
+		real3 min_point, max_point;
+		int seed_points;
+		thrust::host_vector<real3> points;
+		thrust::host_vector<int> values;
+		real mean, std_dev;
+		std::default_random_engine generator;
+		std::normal_distribution<double>* distribution;
+		real boundary;
+		int counter;
+
+};
 
 class ParticleGenerator {
 	public:
@@ -17,6 +88,7 @@ class ParticleGenerator {
 			use_normal_cohesion = false;
 			material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 			use_mixture = false;
+
 		}
 
 		void SetMass(real m) {
@@ -188,14 +260,10 @@ class ParticleGenerator {
 
 						if (mixture[mix_type] == MIX_SPHERE) {
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-						}
-						else if(mixture[mix_type] == MIX_DOUBLESPHERE)
-						{
-							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x/2.0, 0, 0), Quaternion(1, 0, 0, 0));
-							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(r.x/2.0, 0, 0), Quaternion(1, 0, 0, 0));
-						}
-						else if(mixture[mix_type] == MIX_ELLIPSOID)
-						{
+						} else if (mixture[mix_type] == MIX_DOUBLESPHERE) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+						} else if (mixture[mix_type] == MIX_ELLIPSOID) {
 							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						}
 						mix_type++;
@@ -212,6 +280,11 @@ class ParticleGenerator {
 		}
 
 		void addSnowball(real3 origin, ShapeType type, real rad, real3 vel) {
+
+			snow_sampler.SetSize(R3(-rad * 2, -rad * 2, -rad * 2), R3(rad * 2, rad * 2, rad * 2));
+			snow_sampler.SetNormalDist(mean_cohesion, std_dev_cohesion);
+			snow_sampler.Seed();
+
 			int3 grid = I3(rad / radius.x * 2, rad / radius.x * 2, rad / radius.x * 2);
 
 			real offset_x = 0, offset_z = 0, height = 0;
@@ -242,7 +315,21 @@ class ParticleGenerator {
 								computeRadius(r);
 								pos += origin;
 
-								createBody(body, pos, mass);
+								if (use_common_material) {
+									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
+								} else {
+									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, -1, mSys->GetNbodiesTotal());
+									if (use_normal_friction) {
+										body->GetMaterialSurface()->SetFriction(distribution_friction->operator()(generator));
+									} else {
+										body->GetMaterialSurface()->SetFriction(material->GetSfriction());
+									}
+									if (use_normal_cohesion) {
+										body->GetMaterialSurface()->SetCohesion(snow_sampler.GetProperty(pos - origin));
+									} else {
+										body->GetMaterialSurface()->SetCohesion(material->GetCohesion());
+									}
+								}
 
 								AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 
@@ -312,5 +399,8 @@ class ParticleGenerator {
 		std::normal_distribution<double>* distribution;
 		std::normal_distribution<double> *distribution_friction;
 		std::normal_distribution<double> *distribution_cohesion;
+
+		VoronoiSampler snow_sampler;
+
 };
 
