@@ -271,13 +271,13 @@ int main(int argc, char* argv[]) {
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
-	ChOpenGLManager * window_manager = new ChOpenGLManager();
-	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-	openGLView.render_camera->camera_pos = Vector(0, -5, -40);
-	openGLView.render_camera->look_at = Vector(0, -5, 0);
-	openGLView.SetCustomCallback(RunTimeStep);
-	openGLView.StartSpinning(window_manager);
-	window_manager->CallGlutMainLoop();
+//	ChOpenGLManager * window_manager = new ChOpenGLManager();
+//	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
+//	openGLView.render_camera->camera_pos = Vector(0, -5, -40);
+//	openGLView.render_camera->look_at = Vector(0, -5, 0);
+//	openGLView.SetCustomCallback(RunTimeStep);
+//	openGLView.StartSpinning(window_manager);
+//	window_manager->CallGlutMainLoop();
 	//=========================================================================================================
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
