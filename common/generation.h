@@ -54,7 +54,7 @@ class VoronoiSampler {
 			if (bound < boundary) {
 				counter++;
 				//cout << counter << endl;
-				return values[seed_points - 1]/10.0;
+				return values[seed_points - 1] / 10.0;
 			}
 			//cout<<values<<values[seed_points - 1];
 			return values[seed_points - 1];
@@ -186,9 +186,9 @@ class ParticleGenerator {
 		void computeRadius(real3 & r) {
 
 			if (use_normal_dist) {
-				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 3 * std_dev), mean - 3 * std_dev);
-				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 3 * std_dev), mean - 3 * std_dev);
-				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 3 * std_dev), mean - 3 * std_dev);
+				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 3 * std_dev), mean - 1 * std_dev);
+				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 3 * std_dev), mean - 1 * std_dev);
+				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 3 * std_dev), mean - 1 * std_dev);
 			} else {
 				r = radius;
 			}
@@ -261,9 +261,15 @@ class ParticleGenerator {
 						if (mixture[mix_type] == MIX_SPHERE) {
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						} else if (mixture[mix_type] == MIX_DOUBLESPHERE) {
+							Quaternion q;
+							q.Q_from_AngAxis(45, Vector(0, 1, 0));
+							body->SetRot(q);
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
 						} else if (mixture[mix_type] == MIX_ELLIPSOID) {
+							Quaternion q;
+							q.Q_from_AngAxis(45, Vector(0, 1, 0));
+							body->SetRot(q);
 							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						}
 						mix_type++;
