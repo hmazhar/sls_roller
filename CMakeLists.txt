@@ -49,6 +49,9 @@ IF (ENABLE_UNIT_GPU)
 
     ADD_EXECUTABLE(aor aor.cpp)		
     TARGET_LINK_LIBRARIES(aor	${CHRONO_LIB} ${GPU_LIBS})
+    
+     ADD_EXECUTABLE(sls_post sls_post.cpp)		
+    TARGET_LINK_LIBRARIES(sls_post	${CHRONO_LIB} ${GPU_LIBS})
    
 ENDIF(ENABLE_UNIT_GPU)
 

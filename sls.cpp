@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 	//=========================================================================================================
-	 ((ChSystemGPU*) system_gpu)->SetAABB(R3(-6,-3,-30), R3(6,5,30));
+	 ((ChSystemGPU*) system_gpu)->SetAABB(R3(-6,-3,-30), R3(6,6,30));
 
 
 	ChSharedBodyPtr PLATE = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
@@ -174,17 +174,17 @@ int main(int argc, char* argv[]) {
 	FinalizeObject(ROLLER, (ChSystemGPU *) system_gpu);
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
-	//num_per_dir = I3(1, 8, 440);
+	//num_per_dir = I3(1, 16, 440);
 	num_per_dir = I3(74, 8,440);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addPerturbedVolume(R3(0, .7, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 	num_per_dir = I3(74, 30, 50);
 	//num_per_dir = I3(1, 30, 50);
-	layer_gen.addPerturbedVolume(R3(0, 2.8, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.addPerturbedVolume(R3(0, 3.7, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:

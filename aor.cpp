@@ -14,8 +14,10 @@ real plate_friction = 1;
 real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_density = .446;
-real particle_friction = .5;
-real particle_cohesion = 1e-5;
+real particle_friction = 1;
+real particle_rolling_friction = 1;
+real particle_spinning_friction = 1;
+real particle_cohesion = 0;
 Vector particle_initial_vel = Vector(0, -20, 0);     //initial velocity
 
 real container_width = 5.0;
@@ -24,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .00002;
+real timestep = .00001;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -32,8 +34,8 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 150 ;     //add particles every n steps
-int max_iteration = 30;
+int particles_every = 300;     //add particles every n steps
+int max_iteration = 45;
 int tolerance = 0;
 
 int particle_configuration = 0;
@@ -41,7 +43,7 @@ int particle_configuration = 0;
 //1: two spheres joined together
 //2: single ellipsoid
 
-bool create_particle_plate = true;
+bool create_particle_plate = false;
 real particle_plate_dim = 8;
 real plate_particle_radius = .075;
 bool all_three_kinds = true;
@@ -49,30 +51,17 @@ GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
 real start_height = 2;
+ParticleGenerator *layer_gen;
 
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 
-	ParticleGenerator layer_gen(((ChSystemGPU*) mSys));
-	layer_gen.SetDensity(particle_density);
-	layer_gen.SetRadius(R3(particle_radius));
-	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
-	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.material->SetCohesion(particle_cohesion);
-	if (all_three_kinds) {
-		layer_gen.AddMixtureType(MIX_SPHERE);
-		layer_gen.AddMixtureType(MIX_ELLIPSOID);
-		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
-	} else if (particle_configuration == 0) {
-		layer_gen.AddMixtureType(MIX_SPHERE);
-	} else if (particle_configuration == 1) {
-		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
-	} else if (particle_configuration == 2) {
-		layer_gen.AddMixtureType(MIX_ELLIPSOID);
-	}
-
 	if (frame % particles_every == 0 && frame * timestep < 5.5 && frame * timestep > .02) {
-		layer_gen.addPerturbedVolumeMixture(R3(0, start_height, 0), I3(particle_grid_x, 1, particle_grid_z), R3(.1, .1, .1), R3(particle_initial_vel.x, particle_initial_vel.y, particle_initial_vel.z));
+		layer_gen->addPerturbedVolumeMixture(
+				R3(0, start_height, 0),
+				I3(particle_grid_x, 1, particle_grid_z),
+				R3(.1, .1, .1),
+				R3(particle_initial_vel.x, particle_initial_vel.y, particle_initial_vel.z));
 	}
 
 }
@@ -85,13 +74,15 @@ int main(int argc, char* argv[]) {
 	}
 
 	cout << "Density, Radius, Friction_Sphere,Cohesion_Sphere,  Friction_Plate, Data Folder" << endl;
-	if (argc == 7) {
+	if (argc == 9) {
 		particle_density = atof(argv[1]);
 		particle_radius = atof(argv[2]);
 		particle_friction = atof(argv[3]);
-		particle_cohesion = atof(argv[4]);
-		plate_friction = atof(argv[5]);
-		data_folder = argv[6];
+		particle_rolling_friction = atof(argv[4]);
+		particle_spinning_friction = atof(argv[5]);
+		particle_cohesion = atof(argv[6]);
+		plate_friction = atof(argv[7]);
+		data_folder = argv[8];
 		//all_three_kinds = atoi(argv[7]);
 		//particle_configuration = atoi(argv[8]);
 	}
@@ -131,6 +122,8 @@ int main(int argc, char* argv[]) {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material->SetFriction(plate_friction);
+	material->SetSpinningFriction(1);
+	material->SetRollingFriction(1);
 
 	if (create_particle_plate) {
 
@@ -198,6 +191,8 @@ int main(int argc, char* argv[]) {
 	ChSharedPtr<ChMaterialSurface> material_funnel;
 	material_funnel = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_funnel->SetFriction(plate_friction);
+	material_funnel->SetRollingFriction(plate_friction);
+	material_funnel->SetSpinningFriction(plate_friction);
 
 	material_funnel->SetCohesion(-10000);
 
@@ -221,10 +216,10 @@ int main(int argc, char* argv[]) {
 	FinalizeObject(F3, (ChSystemGPU *) system_gpu);
 	FinalizeObject(F4, (ChSystemGPU *) system_gpu);
 
-	InitObject(Lt, 100000, Vector(-funnel_width + funnel_thickness, plate_height + funnel_height+funnel_h/2.0, 0), quat, material_funnel, true, true, -20, -20);
-	InitObject(Rt, 100000, Vector(funnel_width - funnel_thickness, plate_height + funnel_height+funnel_h/2.0, 0), quat, material_funnel, true, true, -20, -20);
-	InitObject(Ft, 100000, Vector(0, plate_height + funnel_height+funnel_h/2.0, -funnel_width + funnel_thickness), quat, material_funnel, true, true, -20, -20);
-	InitObject(Bt, 100000, Vector(0, plate_height + funnel_height+funnel_h/2.0, funnel_width - funnel_thickness), quat, material_funnel, true, true, -20, -20);
+	InitObject(Lt, 100000, Vector(-funnel_width + funnel_thickness, plate_height + funnel_height + funnel_h / 2.0, 0), quat, material_funnel, true, true, -20, -20);
+	InitObject(Rt, 100000, Vector(funnel_width - funnel_thickness, plate_height + funnel_height + funnel_h / 2.0, 0), quat, material_funnel, true, true, -20, -20);
+	InitObject(Ft, 100000, Vector(0, plate_height + funnel_height + funnel_h / 2.0, -funnel_width + funnel_thickness), quat, material_funnel, true, true, -20, -20);
+	InitObject(Bt, 100000, Vector(0, plate_height + funnel_height + funnel_h / 2.0, funnel_width - funnel_thickness), quat, material_funnel, true, true, -20, -20);
 
 	AddCollisionGeometry(Lt, BOX, Vector(funnel_thickness, funnel_h, funnel_width), lpos, quat);
 	AddCollisionGeometry(Rt, BOX, Vector(funnel_thickness, funnel_h, funnel_width), lpos, quat);
@@ -237,37 +232,35 @@ int main(int argc, char* argv[]) {
 	FinalizeObject(Bt, (ChSystemGPU *) system_gpu);
 
 	ChSharedBodyPtr TUBE = ChSharedBodyPtr(new ChBody(new ChCollisionModelGPU));
-	InitObject(TUBE, 100000, Vector(0, plate_height+funnel_height-funnel_h-funnel_h/9.0, 0), quat, material_funnel, true, true, -20, -20);
-	AddCollisionGeometry(TUBE, BOX, Vector(funnel_thickness, funnel_h/6.0, funnel_width/3.0), Vector(-funnel_width/3.0,0,0), quat);
-	AddCollisionGeometry(TUBE, BOX, Vector(funnel_thickness, funnel_h/6.0, funnel_width/3.0), Vector(funnel_width/3.0,0,0), quat);
-	AddCollisionGeometry(TUBE, BOX, Vector(funnel_width/3.0, funnel_h/6.0, funnel_thickness), Vector(0,0,-funnel_width/3.0), quat);
-	AddCollisionGeometry(TUBE, BOX, Vector(funnel_width/3.0, funnel_h/6.0, funnel_thickness), Vector(0,0,funnel_width/3.0), quat);
+	InitObject(TUBE, 100000, Vector(0, plate_height + funnel_height - funnel_h - funnel_h / 9.0, 0), quat, material_funnel, true, true, -20, -20);
+	AddCollisionGeometry(TUBE, BOX, Vector(funnel_thickness, funnel_h / 6.0, funnel_width / 3.0), Vector(-funnel_width / 3.0, 0, 0), quat);
+	AddCollisionGeometry(TUBE, BOX, Vector(funnel_thickness, funnel_h / 6.0, funnel_width / 3.0), Vector(funnel_width / 3.0, 0, 0), quat);
+	AddCollisionGeometry(TUBE, BOX, Vector(funnel_width / 3.0, funnel_h / 6.0, funnel_thickness), Vector(0, 0, -funnel_width / 3.0), quat);
+	AddCollisionGeometry(TUBE, BOX, Vector(funnel_width / 3.0, funnel_h / 6.0, funnel_thickness), Vector(0, 0, funnel_width / 3.0), quat);
 	FinalizeObject(TUBE, (ChSystemGPU *) system_gpu);
 
+	layer_gen = new ParticleGenerator(((ChSystemGPU*) system_gpu));
+	layer_gen->SetDensity(particle_density);
+	layer_gen->SetRadius(R3(particle_radius));
+	layer_gen->SetNormalDistribution(particle_radius, particle_std_dev);
+	layer_gen->material->SetFriction(particle_friction);
+	layer_gen->material->SetRollingFriction(particle_rolling_friction);
+	layer_gen->material->SetSpinningFriction(particle_spinning_friction);
+	layer_gen->material->SetCohesion(particle_cohesion);
 
-	ParticleGenerator layer_gen(((ChSystemGPU*) system_gpu));
-		layer_gen.SetDensity(particle_density);
-		layer_gen.SetRadius(R3(particle_radius));
-		layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
-		layer_gen.material->SetFriction(particle_friction);
-		layer_gen.material->SetCohesion(particle_cohesion);
-		if (all_three_kinds) {
-			layer_gen.AddMixtureType(MIX_SPHERE);
-			layer_gen.AddMixtureType(MIX_ELLIPSOID);
-			layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
-		} else if (particle_configuration == 0) {
-			layer_gen.AddMixtureType(MIX_SPHERE);
-		} else if (particle_configuration == 1) {
-			layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
-		} else if (particle_configuration == 2) {
-			layer_gen.AddMixtureType(MIX_ELLIPSOID);
-		}
+	if (all_three_kinds) {
+		layer_gen->AddMixtureType(MIX_SPHERE);
+		layer_gen->AddMixtureType(MIX_ELLIPSOID);
+		layer_gen->AddMixtureType(MIX_DOUBLESPHERE);
+	} else if (particle_configuration == 0) {
+		layer_gen->AddMixtureType(MIX_SPHERE);
+	} else if (particle_configuration == 1) {
+		layer_gen->AddMixtureType(MIX_DOUBLESPHERE);
+	} else if (particle_configuration == 2) {
+		layer_gen->AddMixtureType(MIX_ELLIPSOID);
+	}
 
-
-			layer_gen.addPerturbedVolumeMixture(R3(0, 1, 0), I3(particle_grid_x, 30, particle_grid_z), R3(.1, .1, .1), R3(0, 0, 0));
-
-
-
+	layer_gen->addPerturbedVolumeMixture(R3(0, 1, 0), I3(particle_grid_x, 30, particle_grid_z), R3(.1, .1, .1), R3(0, 0, 0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
