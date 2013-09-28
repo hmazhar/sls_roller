@@ -184,9 +184,9 @@ int main(int argc, char* argv[]) {
 
 	ChSharedPtr<ChMaterialSurface> material_funnel;
 	material_funnel = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material_funnel->SetFriction(plate_friction);
-	material_funnel->SetRollingFriction(plate_friction);
-	material_funnel->SetSpinningFriction(plate_friction);
+	material_funnel->SetFriction(0);
+	material_funnel->SetRollingFriction(0);
+	material_funnel->SetSpinningFriction(0);
 
 	material_funnel->SetCohesion(-10000);
 
