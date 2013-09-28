@@ -36,7 +36,7 @@ int particle_grid_z = 14;
 
 int particles_every = 300;     //add particles every n steps
 int max_iteration = 45;
-int tolerance = 0;
+int tolerance = 1;
 
 int particle_configuration = 0;
 //0: single sphere
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
 		//particle_configuration = atoi(argv[8]);
 	}
 
-	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
+	cout << particle_density << " " << particle_radius << " " << particle_friction <<" "<<particle_rolling_friction<<" "<<particle_spinning_friction<< " " << particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
 	//=========================================================================================================
 	ChSystemGPU * system_gpu = new ChSystemGPU;
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(tolerance);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(50);
+	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(40);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(solver);
@@ -122,8 +122,8 @@ int main(int argc, char* argv[]) {
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material->SetFriction(plate_friction);
-	material->SetSpinningFriction(1);
-	material->SetRollingFriction(1);
+	material->SetSpinningFriction(plate_friction);
+	material->SetRollingFriction(plate_friction);
 
 	if (create_particle_plate) {
 
