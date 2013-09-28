@@ -27,7 +27,7 @@ real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_mass = .05;
 real particle_density = 0.446;
-real particle_layer_thickness = particle_radius * 6;
+real particle_layer_thickness = particle_radius * 12;
 real particle_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
 real timestep = .00001;			//step size
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
 	//num_per_dir = I3(1, 16, 440);
-	num_per_dir = I3(74, 8,440);
+	num_per_dir = I3(74, 16,440);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
