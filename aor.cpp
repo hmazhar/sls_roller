@@ -66,28 +66,22 @@ void RunTimeStep(T* mSys, const int frame) {
 
 }
 int main(int argc, char* argv[]) {
-	omp_set_num_threads(4);
-	srand(1);
-
-	if (argc == 2) {
-		data_folder = argv[1];
-	}
-
-	cout << "Density, Radius, Friction_Sphere,Cohesion_Sphere,  Friction_Plate, Data Folder" << endl;
-	if (argc == 9) {
-		particle_density = atof(argv[1]);
-		particle_radius = atof(argv[2]);
-		particle_friction = atof(argv[3]);
-		particle_rolling_friction = atof(argv[4]);
-		particle_spinning_friction = atof(argv[5]);
-		particle_cohesion = atof(argv[6]);
-		plate_friction = atof(argv[7]);
-		data_folder = argv[8];
+	if (argc == 10) {
+		omp_set_num_threads(atoi(argv[1]));
+		particle_density = atof(argv[2]);
+		particle_radius = atof(argv[3]);
+		particle_friction = atof(argv[4]);
+		particle_rolling_friction = atof(argv[5]);
+		particle_spinning_friction = atof(argv[6]);
+		particle_cohesion = atof(argv[7]);
+		plate_friction = atof(argv[8]);
+		data_folder = argv[9];
 		//all_three_kinds = atoi(argv[7]);
 		//particle_configuration = atoi(argv[8]);
 	}
 
-	cout << particle_density << " " << particle_radius << " " << particle_friction <<" "<<particle_rolling_friction<<" "<<particle_spinning_friction<< " " << particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
+	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " " << particle_cohesion << " "
+			<< plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
 	//=========================================================================================================
 	ChSystemGPU * system_gpu = new ChSystemGPU;
