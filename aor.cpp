@@ -8,7 +8,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
 real plate_thickness = .25;
-real plate_radius = 5;
+real plate_radius = 4;
 real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
@@ -20,7 +20,7 @@ real particle_spinning_friction = 1;
 real particle_cohesion = 0;
 Vector particle_initial_vel = Vector(0, -20, 0);     //initial velocity
 
-real container_width = 5.0;
+real container_width = plate_radius;
 real container_thickness = .25;
 real container_height = 1.0;
 real wscale = 1;
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
 	((ChCollisionSystemGPU *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
 	mcollisionengine->setBinsPerAxis(R3(50, 50, 50));
 	mcollisionengine->setBodyPerBin(100, 50);
-	//((ChSystemGPU*) system_gpu)->SetAABB(R3(-6, -6, -6), R3(6, 4, 6));
+	((ChSystemGPU*) system_gpu)->SetAABB(R3(-6, -6, -6), R3(6, 4, 6));
 
 	//=========================================================================================================
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
