@@ -7,7 +7,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
-real plate_thickness = .1;
+real plate_thickness = .25;
 real plate_radius = 4;
 real plate_friction = 1;
 
@@ -36,7 +36,7 @@ int particle_grid_z = 14;
 
 int particles_every = 90*2;     //add particles every n steps
 int max_iteration = 60;
-real tolerance = .1;
+real tolerance = 0;
 
 int particle_configuration = 0;
 //0: single sphere
@@ -50,7 +50,7 @@ bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
-real start_height = -1.5;
+real start_height = -2.3;
 ParticleGenerator *layer_gen;
 
 template<class T>
@@ -161,15 +161,15 @@ int main(int argc, char* argv[]) {
 	AddCollisionGeometry(F, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 	AddCollisionGeometry(B, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 
-	FinalizeObject(L, (ChSystemGPU *) system_gpu);
-	FinalizeObject(R, (ChSystemGPU *) system_gpu);
-	FinalizeObject(F, (ChSystemGPU *) system_gpu);
-	FinalizeObject(B, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(L, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(R, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(F, (ChSystemGPU *) system_gpu);
+	//FinalizeObject(B, (ChSystemGPU *) system_gpu);
 
 	//==========
 
 	real funnel_thickness = .05;
-	real funnel_height = 4;
+	real funnel_height = 3.5;
 	real funnel_width = 1;
 	real funnel_h = 2;
 	real funnel_offset = funnel_width ;     //.5*sqrt(2)*funnel_width-funnel_thickness*6+particle_radius*3;
