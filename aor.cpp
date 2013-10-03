@@ -7,7 +7,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
-real plate_thickness = .25;
+real plate_thickness = .1;
 real plate_radius = 4;
 real plate_friction = 1;
 
@@ -50,7 +50,7 @@ bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
-real start_height = -2.3;
+real start_height = -1.5;
 ParticleGenerator *layer_gen;
 
 template<class T>
@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
 	//==========
 
 	real funnel_thickness = .05;
-	real funnel_height = 3.5;
+	real funnel_height = 4;
 	real funnel_width = 1;
 	real funnel_h = 2;
 	real funnel_offset = funnel_width ;     //.5*sqrt(2)*funnel_width-funnel_thickness*6+particle_radius*3;
