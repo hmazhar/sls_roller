@@ -37,7 +37,7 @@ void  validate_real3(real3 A, real3 B, string value, int i, real tolerance) {
 
 }
 
-bool validate_positions(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tolerance) {
+bool validate_positions(ChSystem* system_cpu, ChSystemParallel* system_gpu, real tolerance) {
 	vector<real3> positions_cpu, positions_gpu;
 	cout << "validating positions" << endl;
 	for (int i = 0; i < system_cpu->Get_bodylist()->size(); i++) {
@@ -54,7 +54,7 @@ bool validate_positions(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tole
 	cout << "validating positions - DONE" << endl;
 	return true;
 }
-bool validate_rotations(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tolerance) {
+bool validate_rotations(ChSystem* system_cpu, ChSystemParallel* system_gpu, real tolerance) {
 	vector<ChQuaternion<> > positions_cpu, positions_gpu;
 	cout << "validating rotations" << endl;
 	for (int i = 0; i < system_cpu->Get_bodylist()->size(); i++) {
@@ -83,7 +83,7 @@ bool validate_rotations(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tole
 	cout << "validating rotations - DONE" << endl;
 	return true;
 }
-bool validate_velocities(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tolerance) {
+bool validate_velocities(ChSystem* system_cpu, ChSystemParallel* system_gpu, real tolerance) {
 	vector<ChVector<> > velocities_cpu, velocities_gpu;
 	cout << "validating velocities" << endl;
 	for (int i = 0; i < system_cpu->Get_bodylist()->size(); i++) {
@@ -111,7 +111,7 @@ bool validate_velocities(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tol
 	return true;
 }
 
-bool validate_omega(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tolerance) {
+bool validate_omega(ChSystem* system_cpu, ChSystemParallel* system_gpu, real tolerance) {
 	vector<real3> omega_cpu, omega_gpu;
 	cout << "validating omega" << endl;
 	for (int i = 0; i < system_cpu->Get_bodylist()->size(); i++) {
@@ -128,7 +128,7 @@ bool validate_omega(ChSystem* system_cpu, ChSystemGPU* system_gpu, real toleranc
 	cout << "validating omega - Done" << endl;
 	return true;
 }
-bool validate_shur(ChSystem* system_cpu, ChSystemGPU* system_gpu, real tolerance) {
+bool validate_shur(ChSystem* system_cpu, ChSystemParallel* system_gpu, real tolerance) {
 	vector<double> shur_cpu, shur_gpu;
 	cout << "validating Shur" << endl;
 
@@ -296,15 +296,15 @@ void printContactsCPU(ChSystem* system_cpu, vector<contact_dat> & contact_cpu) {
 
 	cout << "CContacts: " << contact_cpu.size() << endl;
 }
-void printContactsGPU(ChSystemGPU* system_gpu, vector<contact_dat> & contact_gpu) {
+void printContactsGPU(ChSystemParallel* system_gpu, vector<contact_dat> & contact_gpu) {
 
 	system_gpu->gpu_data_manager->DeviceToHostContacts();
 	contact_dat icontact;
 	system_gpu->gpu_data_manager->DeviceToHostJacobians();
-	uint constraints = system_gpu->gpu_data_manager->number_of_rigid_rigid;
+	uint constraints = system_gpu->gpu_data_manager->number_of_contacts;
 	vector<double> rhs_gpu;
 	((ChLcpSolverGPU *) (system_gpu->GetLcpSolverSpeed()))->Dump_Rhs(rhs_gpu);
-	for (int i = 0; i < system_gpu->gpu_data_manager->number_of_rigid_rigid; i++) {
+	for (int i = 0; i < system_gpu->gpu_data_manager->number_of_contacts; i++) {
 		real3 vN = system_gpu->gpu_data_manager->host_norm_data[i];
 		real3 vpA = system_gpu->gpu_data_manager->host_cpta_data[i];
 		real3 vpB = system_gpu->gpu_data_manager->host_cptb_data[i];

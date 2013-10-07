@@ -15,30 +15,30 @@
 
  */
 
-void setSolverGPU(string solver, ChSystemGPU* m_system) {
+void setSolverGPU(string solver, ChSystemParallel* m_system) {
 	if (solver == "APGD") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	} else if (solver == "JACOBI") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BLOCK_JACOBI);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BLOCK_JACOBI);
 	} else if (solver == "CG") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(CONJUGATE_GRADIENT);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(CONJUGATE_GRADIENT);
 	} else if (solver == "CGS") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(CONJUGATE_GRADIENT_SQUARED);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(CONJUGATE_GRADIENT_SQUARED);
 	} else if (solver == "BICG") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BICONJUGATE_GRADIENT);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BICONJUGATE_GRADIENT);
 	} else if (solver == "BICGSTAB") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BICONJUGATE_GRADIENT_STAB);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(BICONJUGATE_GRADIENT_STAB);
 	} else if (solver == "GD") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(GRADIENT_DESCENT);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(GRADIENT_DESCENT);
 	} else if (solver == "SD") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(STEEPEST_DESCENT);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(STEEPEST_DESCENT);
 	} else if (solver == "MINRES") {
-		((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetSolverType(MINIMUM_RESIDUAL);
+		((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetSolverType(MINIMUM_RESIDUAL);
 	}
 }
 
 
-void ReadInputFile(string input, ChSystemGPU* m_system) {
+void ReadInputFile(string input, ChSystemParallel* m_system) {
 	ifstream ifile(input.c_str());
 	if (ifile.fail()) {
 		cout << "CONFIG FILE FAIL" << endl;
@@ -65,7 +65,7 @@ void ReadInputFile(string input, ChSystemGPU* m_system) {
 //--------------------------------------------------------------------------------
 		if (token == "solver_max_iterations:") {
 			ifile >> value_int;
-			((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetMaxIteration(value_int);
+			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetMaxIteration(value_int);
 			m_system->SetMaxiter(value_int);
 			m_system->SetIterLCPmaxItersSpeed(value_int);
 		}
@@ -74,35 +74,35 @@ void ReadInputFile(string input, ChSystemGPU* m_system) {
 			ifile >> value_real;
 			m_system->SetTol(value_real);
 			m_system->SetTolSpeeds(value_real);
-			((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetTolerance(value_real);
+			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetTolerance(value_real);
 		}
 //--------------------------------------------------------------------------------
 		if (token == "compliance:") {
 			real compliance, compliance_T, alpha;
 			ifile >> compliance >> compliance_T >> alpha;
-			((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetCompliance(compliance, compliance_T, alpha);
+			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetCompliance(compliance, compliance_T, alpha);
 		}
 //--------------------------------------------------------------------------------
 		if (token == "contact_recovery_speed:") {
 			ifile >> value_real;
-			((ChLcpSolverGPU *) (m_system->GetLcpSolverSpeed()))->SetContactRecoverySpeed(value_real);
+			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetContactRecoverySpeed(value_real);
 		}
 //--------------------------------------------------------------------------------
 		if (token == "contact_envelope:") {
 			ifile >> value_real;
-			((ChCollisionSystemGPU *) (m_system->GetCollisionSystem()))->SetCollisionEnvelope(value_real);
+			((ChCollisionSystemParallel *) (m_system->GetCollisionSystem()))->SetCollisionEnvelope(value_real);
 		}
 //--------------------------------------------------------------------------------
 		if (token == "collision_BPA:") {
 			int x, y, z;
 			ifile >> x >> y >> z;
-			((ChCollisionSystemGPU *) (m_system->GetCollisionSystem()))->setBinsPerAxis(R3(x, y, z));
+			((ChCollisionSystemParallel *) (m_system->GetCollisionSystem()))->setBinsPerAxis(R3(x, y, z));
 		}
 //--------------------------------------------------------------------------------
 		if (token == "collision_BPB:") {
 			int min_b, max_b;
 			ifile >> max_b >> min_b;
-			((ChCollisionSystemGPU *) (m_system->GetCollisionSystem()))->setBodyPerBin(max_b, min_b);
+			((ChCollisionSystemParallel *) (m_system->GetCollisionSystem()))->setBodyPerBin(max_b, min_b);
 		}
 //--------------------------------------------------------------------------------
 	}

@@ -96,13 +96,14 @@ void DumpAllObjects(T* mSys, string filename, string delim = ",", bool dump_vel_
 	}
 	csv_output.CloseFile();
 }
-void DumpAllObjectsWithGeometryPovray(ChSystemGPU* mSys, string filename) {
+void DumpAllObjectsWithGeometryPovray(ChSystemParallel* mSys, string filename) {
 
 	CSVGen csv_output;
 	csv_output.OpenFile(filename.c_str());
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
 		ChBody* abody = mSys->Get_bodylist()->at(i);
 		const Vector pos = abody->GetPos();
+		const Vector vel = abody->GetPos_dt();
 		Quaternion rot = abody->GetRot();
 		Vector pos_final, rad_final;
 		ShapeType type = SPHERE;
@@ -144,10 +145,20 @@ void DumpAllObjectsWithGeometryPovray(ChSystemGPU* mSys, string filename) {
 				rad_final.z = rad;
 				pos_final = pos;
 				type = CYLINDER;
+			}else if (asset.IsType<ChConeShape>()) {
+				ChConeShape * cylinder_shape = ((ChConeShape *) (asset.get_ptr()));
+				Vector center = cylinder_shape->GetConeGeometry().center;
+				rad_final.x = cylinder_shape->GetConeGeometry().rad.x;
+				rad_final.y = cylinder_shape->GetConeGeometry().rad.y;
+				rad_final.z = cylinder_shape->GetConeGeometry().rad.z;
+				pos_final = pos+center;
+				type = CONE;
 			}
 
 			csv_output << R3(pos_final.x, pos_final.y, pos_final.z);
 			csv_output << R4(rot.e0, rot.e1, rot.e2, rot.e3);
+			csv_output << R3(vel.x,vel.y,vel.z);
+
 
 			if (asset.IsType<ChSphereShape>()) {
 				csv_output << type;
@@ -166,7 +177,6 @@ void DumpAllObjectsWithGeometryPovray(ChSystemGPU* mSys, string filename) {
 				csv_output << R2(rad_final.x, rad_final.y);
 				csv_output.Endline();
 			} else if (asset.IsType<ChConeShape>()) {
-
 				csv_output << type;
 				csv_output << R2(rad_final.x, rad_final.y);
 				csv_output.Endline();
@@ -180,7 +190,7 @@ void DumpAllObjectsWithGeometryPovray(ChSystemGPU* mSys, string filename) {
 	csv_output.CloseFile();
 }
 
-void DumpAllObjectsWithGeometry(ChSystemGPU* mSys, string filename, string delim = ",") {
+void DumpAllObjectsWithGeometry(ChSystemParallel* mSys, string filename, string delim = ",") {
 	ofstream ofile(filename.c_str());
 
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
@@ -259,10 +269,10 @@ template<class T>
 void TimingFile(T* mSys, string filename, real current_time) {
 	ofstream ofile(filename.c_str(), std::ofstream::out | std::ofstream::app);
 
-	ofile << " Residual: " << ((ChLcpSolverGPU *) (mSys->GetLcpSolverSpeed()))->GetResidual();
-	ofile << " ITER: " << ((ChLcpSolverGPU *) (mSys->GetLcpSolverSpeed()))->GetTotalIterations();
+	ofile << " Residual: " << ((ChLcpSolverParallel *) (mSys->GetLcpSolverSpeed()))->GetResidual();
+	ofile << " ITER: " << ((ChLcpSolverParallel *) (mSys->GetLcpSolverSpeed()))->GetTotalIterations();
 	ofile << " OUTPUT STEP: Time= " << current_time << " bodies= " << mSys->GetNbodies() << " contacts= " << mSys->GetNcontacts() << " step time=" << mSys->GetTimerStep() << " lcp time="
 			<< mSys->GetTimerLcp() << " CDbroad time=" << mSys->GetTimerCollisionBroad() << " CDnarrow time=" << mSys->GetTimerCollisionNarrow() << " Iterations="
-			<< ((ChLcpSolverGPU*) (mSys->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
+			<< ((ChLcpSolverParallel*) (mSys->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
 	ofile.close();
 }
