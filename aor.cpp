@@ -34,7 +34,7 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 90*2;     //add particles every n steps
+int particles_every = 90 * 2;     //add particles every n steps
 int max_iteration = 60;
 real tolerance = 0;
 
@@ -66,9 +66,10 @@ void RunTimeStep(T* mSys, const int frame) {
 
 }
 int main(int argc, char* argv[]) {
-	omp_set_num_threads(4);
+	int threads = 8;
+
 	if (argc == 10) {
-		omp_set_num_threads(atoi(argv[1]));
+		threads = (atoi(argv[1]));
 		particle_density = atof(argv[2]);
 		particle_radius = atof(argv[3]);
 		particle_friction = atof(argv[4]);
@@ -80,7 +81,7 @@ int main(int argc, char* argv[]) {
 		//all_three_kinds = atoi(argv[7]);
 		//particle_configuration = atoi(argv[8]);
 	}
-
+	omp_set_num_threads(threads);
 	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " " << particle_cohesion << " "
 			<< plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
@@ -91,6 +92,7 @@ int main(int argc, char* argv[]) {
 	//system_gpu->SetAABB(R3(-2,-5,-2), R3(2,5,2));
 
 	//=========================================================================================================
+	system_gpu->SetParallelThreadNumber(threads);
 	system_gpu->SetMaxiter(max_iteration);
 	system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]) {
 	real funnel_height = 4;
 	real funnel_width = 1;
 	real funnel_h = 2;
-	real funnel_offset = funnel_width ;     //.5*sqrt(2)*funnel_width-funnel_thickness*6+particle_radius*3;
+	real funnel_offset = funnel_width;     //.5*sqrt(2)*funnel_width-funnel_thickness*6+particle_radius*3;
 	ChSharedBodyPtr Lt = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 	ChSharedBodyPtr Rt = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 	ChSharedBodyPtr Ft = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
@@ -191,7 +193,6 @@ int main(int argc, char* argv[]) {
 
 	material_funnel->SetCohesion(-10000);
 
-
 	ChSharedBodyPtr Ring;
 
 	for (int i = 0; i < 360; i += 5) {
@@ -199,16 +200,16 @@ int main(int argc, char* argv[]) {
 		real angle = i * PI / 180.0;
 		real x = cos(angle) * 1;
 		real z = sin(angle) * 1;
-		Quaternion q1, q2,q;
+		Quaternion q1, q2, q;
 		q1.Q_from_AngAxis(-angle, Vector(0, 1, 0));
-		q2.Q_from_AngAxis(-45*PI/180.0, Vector(0, 0, 1));
-		q=q1%q2;
+		q2.Q_from_AngAxis(-45 * PI / 180.0, Vector(0, 0, 1));
+		q = q1 % q2;
 
 		Ring = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-		InitObject(Ring, 100000, Vector(x,plate_height + funnel_height - funnel_width, z), q, material_funnel, true, true, -20, -20);
+		InitObject(Ring, 100000, Vector(x, plate_height + funnel_height - funnel_width, z), q, material_funnel, true, true, -20, -20);
 
-		AddCollisionGeometry(Ring, BOX, Vector(funnel_thickness, funnel_width*.9, funnel_thickness*2), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-		AddCollisionGeometry(Ring, SPHERE, Vector(funnel_thickness*1.2, funnel_width*.9, funnel_thickness*2), Vector(0, -1*.9, 0), Quaternion(1, 0, 0, 0));
+		AddCollisionGeometry(Ring, BOX, Vector(funnel_thickness, funnel_width * .9, funnel_thickness * 2), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+		AddCollisionGeometry(Ring, SPHERE, Vector(funnel_thickness * 1.2, funnel_width * .9, funnel_thickness * 2), Vector(0, -1 * .9, 0), Quaternion(1, 0, 0, 0));
 
 		FinalizeObject(Ring, (ChSystemParallel *) system_gpu);
 	}
@@ -228,13 +229,10 @@ int main(int argc, char* argv[]) {
 //	FinalizeObject(Ft, (ChSystemParallel *) system_gpu);
 //	FinalizeObject(Bt, (ChSystemParallel *) system_gpu);
 
-
 //	ChSharedBodyPtr TUBE = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 //	InitObject(TUBE, 100000, Vector(0, plate_height + funnel_height - funnel_h+.7 , 0), quat, material_funnel, true, true, -20, -20);
 //	AddCollisionGeometry(TUBE, BOX, Vector(2,.05,2), Vector(0, 0, 0), quat);
 //	FinalizeObject(TUBE, (ChSystemParallel *) system_gpu);
-
-
 
 	layer_gen = new ParticleGenerator(((ChSystemParallel*) system_gpu));
 	layer_gen->SetDensity(particle_density);

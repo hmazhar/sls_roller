@@ -16,7 +16,7 @@ real spacer_width = 1;
 real spacer_height = 1;
 
 real roller_overlap = 1; 		//amount that roller goes over the container area
-real roller_length = 2.5-.25;			//length of the roller
+real roller_length = 2.5 - .25;			//length of the roller
 real roller_radius = 76.2 / 2.0;			//radius of roller
 real roller_omega = 0;
 real roller_velocity = -127;
@@ -68,11 +68,10 @@ void RunTimeStep(T* mSys, const int frame) {
 }
 int main(int argc, char* argv[]) {
 	bool visualize = false;
-	int threads = 0;
+	int threads = 8;
 
 	if (argc > 1) {
 		threads = atoi(argv[1]);
-		omp_set_num_threads(threads);
 
 		visualize = atoi(argv[2]);
 		//visualize
@@ -89,15 +88,15 @@ int main(int argc, char* argv[]) {
 		//roller_cohesion
 
 	}
-
+	omp_set_num_threads(threads);
 	//cout << "Mass, Radius, Friction_Sphere, Friction_Plate, Data Folder, create_particle_plate all_three_kinds, particle configuration" << endl;
 	//string solver_string = "ACCELERATED_PROJECTED_GRADIENT_DESCENT";
 	//=========================================================================================================
-ChSystemParallel * system_gpu = new ChSystemParallel;
+	ChSystemParallel * system_gpu = new ChSystemParallel;
 	system_gpu->SetIntegrationType(ChSystem::INT_ANITESCU);
 
 	//=========================================================================================================
-
+	system_gpu->SetParallelThreadNumber(threads);
 	system_gpu->SetMaxiter(max_iteration);
 	system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
@@ -117,8 +116,7 @@ ChSystemParallel * system_gpu = new ChSystemParallel;
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 	//=========================================================================================================
-	 ((ChSystemParallel*) system_gpu)->SetAABB(R3(-6,-3,-30), R3(6,6,30));
-
+	((ChSystemParallel*) system_gpu)->SetAABB(R3(-6, -3, -30), R3(6, 6, 30));
 
 	ChSharedBodyPtr PLATE = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 	ChSharedBodyPtr L = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
@@ -147,7 +145,7 @@ ChSystemParallel * system_gpu = new ChSystemParallel;
 
 	AddCollisionGeometry(PLATE, BOX, ChVector<>(container_width, container_thickness, container_length), lpos, quat);
 	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(-container_width + container_thickness, container_height, 0), quat);
-	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length),  Vector(container_width - container_thickness, container_height, 0), quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(container_width - container_thickness, container_height, 0), quat);
 	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, -container_length + container_thickness), quat);
 	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, container_length - container_thickness), quat);
 	//AddCollisionGeometry(SPACER_L, BOX, Vector(spacer_width, spacer_height, container_length), lpos, quat);
@@ -169,13 +167,22 @@ ChSystemParallel * system_gpu = new ChSystemParallel;
 	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
 	material_roller->SetFriction(roller_friction);
 
-	InitObject(ROLLER, 1000, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius/3.0), roller_quat, material_roller, true, false, -20, -20);
+	InitObject(
+			ROLLER,
+			1000,
+			ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius / 3.0),
+			roller_quat,
+			material_roller,
+			true,
+			false,
+			-20,
+			-20);
 	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
 	FinalizeObject(ROLLER, (ChSystemParallel *) system_gpu);
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
 	//num_per_dir = I3(1, 16, 440);
-	num_per_dir = I3(74, 16,440);
+	num_per_dir = I3(74, 16, 440);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
