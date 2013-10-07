@@ -35,7 +35,7 @@ int particle_grid_x = 14;
 int particle_grid_z = 14;
 
 int particles_every = 90 * 2;     //add particles every n steps
-int max_iteration = 60;
+int max_iteration = 120;
 real tolerance = 0;
 
 int particle_configuration = 0;
