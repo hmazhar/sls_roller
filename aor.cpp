@@ -8,7 +8,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
 real plate_thickness = .1;
-real plate_radius = 4;
+real plate_radius =4;
 real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
@@ -35,8 +35,8 @@ int particle_grid_x = 14;
 int particle_grid_z = 14;
 
 int particles_every = 90 * 4;     //add particles every n steps
-int max_iteration = 20;
-real tolerance = 0;
+int max_iteration = 60;
+real tolerance = .01;
 
 int particle_configuration = 0;
 //0: single sphere
@@ -82,6 +82,8 @@ int main(int argc, char* argv[]) {
 		//particle_configuration = atoi(argv[8]);
 	}
 	omp_set_num_threads(threads);
+
+
 	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " " << particle_cohesion << " "
 			<< plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
@@ -118,9 +120,9 @@ int main(int argc, char* argv[]) {
 
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(plate_friction);
-	material->SetSpinningFriction(plate_friction);
-	material->SetRollingFriction(plate_friction);
+	material->SetFriction(2-particle_friction);
+	material->SetSpinningFriction(2-particle_spinning_friction);
+	material->SetRollingFriction(2-particle_rolling_friction);
 
 	if (create_particle_plate) {
 
