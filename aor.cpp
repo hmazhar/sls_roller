@@ -26,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .000025;
+real timestep = .000025/2.0;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -34,8 +34,8 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 90 * 2;     //add particles every n steps
-int max_iteration = 120;
+int particles_every = 90 * 4;     //add particles every n steps
+int max_iteration = 20;
 real tolerance = 0;
 
 int particle_configuration = 0;
