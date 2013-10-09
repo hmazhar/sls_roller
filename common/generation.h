@@ -2,7 +2,7 @@
 #include <random>
 
 enum MixType {
-	MIX_SPHERE, MIX_ELLIPSOID, MIX_DOUBLESPHERE, MIX_CUBE, MIX_CYLINDER, MIX_CONE
+	MIX_SPHERE, MIX_ELLIPSOID, MIX_DOUBLESPHERE, MIX_CUBE, MIX_CYLINDER, MIX_CONE,MIX_TYPE1,MIX_TYPE2,MIX_TYPE3,MIX_TYPE4
 };
 class VoronoiSampler {
 	public:
@@ -271,6 +271,19 @@ class ParticleGenerator {
 							AddCollisionGeometry(body, CYLINDER, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						}else if (mixture[mix_type] == MIX_CONE) {
 							AddCollisionGeometry(body, CONE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+						}else if (mixture[mix_type] == MIX_TYPE1) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x*.75, r.y*.75, r.z*.75), Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+						}else if (mixture[mix_type] == MIX_TYPE2) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(-r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y*.75, r.z*.75), Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+						}else if (mixture[mix_type] == MIX_TYPE3) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, CONE, ChVector<>(r.x*.4, r.y*.4, r.z*.4), Vector(0, r.x, 0), Quaternion(1, 0, 0, 0));
+						}else if (mixture[mix_type] == MIX_TYPE4) {
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x*.5, r.y, r.z), Vector(-r.x*.5 / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x*.5, r.y, r.z), Vector(r.x *.5/ 2.0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y*.5, r.z*.5), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						}
 						mix_type++;
 						if (mix_type > mixture.size()) {
