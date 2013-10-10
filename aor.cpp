@@ -13,7 +13,7 @@ real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
-real particle_density = .446;
+real particle_density = .93;
 real particle_friction = 1;
 real particle_rolling_friction = 1;
 real particle_spinning_friction = 1;
