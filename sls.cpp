@@ -188,10 +188,18 @@ int main(int argc, char* argv[]) {
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.AddMixtureType(MIX_TYPE1);
+		layer_gen.AddMixtureType(MIX_TYPE2);
+		layer_gen.AddMixtureType(MIX_TYPE3);
+		layer_gen.AddMixtureType(MIX_TYPE4);
+		layer_gen.AddMixtureType(MIX_SPHERE);
+		layer_gen.AddMixtureType(MIX_ELLIPSOID);
+		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
+	layer_gen.addPerturbedVolumeMixture(R3(0, 1.2, 0), num_per_dir, R3(.1, .1, .1), R3(0));
 	num_per_dir = I3(74, 30, 50);
 	//num_per_dir = I3(1, 30, 50);
-	layer_gen.addPerturbedVolume(R3(0, 3.7, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
+
+	layer_gen.addPerturbedVolumeMixture(R3(0, 3.7, 15), num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
