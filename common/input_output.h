@@ -148,6 +148,7 @@ void DumpAllObjectsWithGeometryPovray(ChSystemParallel* mSys, string filename) {
 			}else if (asset.IsType<ChConeShape>()) {
 				ChConeShape * cylinder_shape = ((ChConeShape *) (asset.get_ptr()));
 				Vector center = cylinder_shape->GetConeGeometry().center;
+				center = rot.Rotate(center);
 				rad_final.x = cylinder_shape->GetConeGeometry().rad.x;
 				rad_final.y = cylinder_shape->GetConeGeometry().rad.y;
 				rad_final.z = cylinder_shape->GetConeGeometry().rad.z;
