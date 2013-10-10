@@ -34,7 +34,7 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 90 * 4;     //add particles every n steps
+int particles_every = 90 * 3;     //add particles every n steps
 int max_iteration = 60;
 real tolerance = .01;
 
@@ -43,8 +43,8 @@ int particle_configuration = 0;
 //1: two spheres joined together
 //2: single ellipsoid
 
-bool create_particle_plate = 0;
-real particle_plate_dim = 8;
+bool create_particle_plate = 1;
+real particle_plate_dim = 6;
 real plate_particle_radius = .075;
 bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
@@ -138,9 +138,10 @@ int main(int argc, char* argv[]) {
 						j * plate_particle_radius * 1.2 - num_particle * plate_particle_radius * .6);
 
 				position.x += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
+				position.y += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
 				position.z += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
 
-				AddCollisionGeometry(sphere, ELLIPSOID, ChVector<>(plate_particle_radius, plate_particle_radius * .2, plate_particle_radius), position, quat);
+				AddCollisionGeometry(sphere, ELLIPSOID, ChVector<>(plate_particle_radius, plate_particle_radius * .6, plate_particle_radius), position, quat);
 			}
 		}
 		FinalizeObject(sphere, (ChSystemParallel *) system_gpu);
