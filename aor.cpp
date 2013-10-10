@@ -26,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .000025/2.0;
+real timestep = .000025;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
