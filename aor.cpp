@@ -8,7 +8,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
 real plate_thickness = .1;
-real plate_radius =4;
+real plate_radius =2;
 real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
@@ -26,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .000025;
+real timestep = .00002;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -34,9 +34,9 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 90 * 3;     //add particles every n steps
-int max_iteration = 60;
-real tolerance = .01;
+int particles_every = 90 * 4;     //add particles every n steps
+int max_iteration = 100;
+real tolerance = .001;
 
 int particle_configuration = 0;
 //0: single sphere
@@ -44,7 +44,7 @@ int particle_configuration = 0;
 //2: single ellipsoid
 
 bool create_particle_plate = 1;
-real particle_plate_dim = 6;
+real particle_plate_dim = 3;
 real plate_particle_radius = .075;
 bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
@@ -56,7 +56,7 @@ ParticleGenerator *layer_gen;
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 //&& frame * timestep < 5.5 && frame * timestep > .02
-	if (frame % particles_every == 0 && frame * timestep < .5) {
+	if (frame % particles_every == 0 && frame * timestep < 1) {
 		layer_gen->addPerturbedVolumeMixture(
 				R3(0, start_height, 0),
 				I3(particle_grid_x, 1, particle_grid_z),
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
 						j * plate_particle_radius * 1.2 - num_particle * plate_particle_radius * .6);
 
 				position.x += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
-				position.y += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
+				position.y += rand() % 10000 / 10000.0 * plate_particle_radius * .5 - plate_particle_radius * .5 * .5;
 				position.z += rand() % 10000 / 10000.0 * plate_particle_radius * .25 - plate_particle_radius * .25 * .5;
 
 				AddCollisionGeometry(sphere, ELLIPSOID, ChVector<>(plate_particle_radius, plate_particle_radius * .6, plate_particle_radius), position, quat);
@@ -166,10 +166,10 @@ int main(int argc, char* argv[]) {
 	AddCollisionGeometry(F, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 	AddCollisionGeometry(B, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 
-	//FinalizeObject(L, (ChSystemParallel *) system_gpu);
-	//FinalizeObject(R, (ChSystemParallel *) system_gpu);
-	//FinalizeObject(F, (ChSystemParallel *) system_gpu);
-	//FinalizeObject(B, (ChSystemParallel *) system_gpu);
+	FinalizeObject(L, (ChSystemParallel *) system_gpu);
+	FinalizeObject(R, (ChSystemParallel *) system_gpu);
+	FinalizeObject(F, (ChSystemParallel *) system_gpu);
+	FinalizeObject(B, (ChSystemParallel *) system_gpu);
 
 	//==========
 
