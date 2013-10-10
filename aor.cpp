@@ -56,7 +56,7 @@ ParticleGenerator *layer_gen;
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
 //&& frame * timestep < 5.5 && frame * timestep > .02
-	if (frame % particles_every == 0 && frame * timestep < 5.5) {
+	if (frame % particles_every == 0 && frame * timestep < .5) {
 		layer_gen->addPerturbedVolumeMixture(
 				R3(0, start_height, 0),
 				I3(particle_grid_x, 1, particle_grid_z),
