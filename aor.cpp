@@ -8,7 +8,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
 real plate_thickness = .1;
-real plate_radius =2;
+real plate_radius =5;
 real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
@@ -44,7 +44,7 @@ int particle_configuration = 0;
 //2: single ellipsoid
 
 bool create_particle_plate = 1;
-real particle_plate_dim = 3;
+real particle_plate_dim = 6;
 real plate_particle_radius = .075;
 bool all_three_kinds = true;
 GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
@@ -166,10 +166,10 @@ int main(int argc, char* argv[]) {
 	AddCollisionGeometry(F, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 	AddCollisionGeometry(B, BOX, Vector(container_width * wscale, container_height, container_thickness), lpos, quat);
 
-	FinalizeObject(L, (ChSystemParallel *) system_gpu);
-	FinalizeObject(R, (ChSystemParallel *) system_gpu);
-	FinalizeObject(F, (ChSystemParallel *) system_gpu);
-	FinalizeObject(B, (ChSystemParallel *) system_gpu);
+	//FinalizeObject(L, (ChSystemParallel *) system_gpu);
+	//FinalizeObject(R, (ChSystemParallel *) system_gpu);
+	//FinalizeObject(F, (ChSystemParallel *) system_gpu);
+	//FinalizeObject(B, (ChSystemParallel *) system_gpu);
 
 	//==========
 
