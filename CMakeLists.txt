@@ -50,6 +50,8 @@ include_directories(${INC_DIRS})
      ADD_EXECUTABLE(sls_post sls_post.cpp)		
     TARGET_LINK_LIBRARIES(sls_post	${CHRONO_LIB} ${GPU_LIBS})
    
+ ADD_EXECUTABLE(density density.cpp)		
+    TARGET_LINK_LIBRARIES(density	${CHRONO_LIB} ${GPU_LIBS})
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
