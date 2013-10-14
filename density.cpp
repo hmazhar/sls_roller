@@ -34,9 +34,9 @@ int num_steps = time_to_run / timestep;
 int particle_grid_x = 14;
 int particle_grid_z = 14;
 
-int particles_every = 90 * 4;     //add particles every n steps
+int particles_every = 100 * 4;     //add particles every n steps
 int max_iteration = 30;
-real tolerance = .001;
+real tolerance = 0;
 
 int particle_configuration = 0;
 //0: single sphere
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(tolerance);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
-	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(20);
+	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(10);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(solver);
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
 			Ring = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 			InitObject(Ring, 100000, Vector(x, 2 +plate_height, z), q, material, true, true, -20, -20);
 
-			AddCollisionGeometry(Ring, BOX, Vector(.1, 2, .1), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+			AddCollisionGeometry(Ring, BOX, Vector(.1, 2, .062), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 
 			FinalizeObject(Ring, (ChSystemParallel *) system_gpu);
 		}
