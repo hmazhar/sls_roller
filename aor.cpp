@@ -35,8 +35,8 @@ int particle_grid_x = 14;
 int particle_grid_z = 14;
 
 int particles_every = 90 * 4;     //add particles every n steps
-int max_iteration = 100;
-real tolerance = .001;
+int max_iteration = 150;
+real tolerance = 0;
 
 int particle_configuration = 0;
 //0: single sphere
