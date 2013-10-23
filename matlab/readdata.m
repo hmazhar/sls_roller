@@ -1,32 +1,50 @@
-clear
-clc
+%clear
+%clc
 
-M = csvread('270.txt');
+%M = csvread('1200.txt');
+%N = csvread('200.txt');
 %M = max(min(M,1),-5);
 
-xx = M(10:371486,1);
-yy = M(10:371486,3);
-zz = M(10:371486,2);
+xx = N(10:631966,1);
+yy = N(10:631966,3);
+zz = N(10:631966,2);
 
-%xx = max(min(xx,4),-4);
-%yy = max(min(yy,4),-4);
+xx = max(min(xx,3),-3);
+yy = max(min(yy,3),-3);
 
-zz = max(min(zz,.6),.3);
-rad = M(10:371486,9);
+%zz = max(min(zz,.6),.1);
+%rad = M(10:371486,9);
 minX = min(xx);
 maxX = max(xx);
 minY = min(yy);
 maxY = max(yy);
 
-targetSize = [40 150];
+% x_bin_edges = minX:.1:maxX;
+% y_bin_edges =  minY:.1:maxY;
+% [average, stdev, centers, population, out_of_range] = binXYZonXY( x_bin_edges, y_bin_edges, xx, yy, zz, 0, 1 );
+
+dim_x = 60;
+dim_y = dim_x+2;
+
+targetSize = [dim_x dim_y];
 
 xxBin = round( (xx-minX)/(maxX-minX)*(targetSize(1)-1) ) +1;
 yyBin = round( (yy-minY)/(maxY-minY)*(targetSize(2)-1) ) +1;
-
+colormap(gray(128))
 map = accumarray([xxBin(:),yyBin(:)],zz,targetSize,@max,0);
+map = map(1:dim_x,2:dim_y-1);
+map = map-min(min(map));
+x_int = 0:.1:60;
 
-surf(map)
 
+map=interp2(map,2);
+imwrite(map, 'hmap_before.png')
+
+surf(map,'EdgeColor','none');
+colorbar
+%min_h = min(min(map))
+%max_h = max(max(map))
+%std_dev = std2(map)
 
 % dy = .2;
 % dx = .2;
