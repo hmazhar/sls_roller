@@ -29,6 +29,8 @@ real particle_mass = .05;
 real particle_density = 0.93;
 real particle_layer_thickness = particle_radius * 12;
 real particle_friction = .1;
+real rolling_friction = .1;
+real spinning_friction = .1;
 real gravity = -9810;			//acceleration due to gravity
 real timestep = .00001;			//step size
 real time_to_run = 1;			//length of simulation
@@ -69,11 +71,17 @@ void RunTimeStep(T* mSys, const int frame) {
 int main(int argc, char* argv[]) {
 	bool visualize = false;
 	int threads = 8;
-
+	int config = 0;
 	if (argc > 1) {
 		threads = atoi(argv[1]);
 
 		visualize = atoi(argv[2]);
+
+		particle_friction = atof(argv[3]);
+		rolling_friction = atof(argv[4]);
+		spinning_friction = atof(argv[5]);
+		data_folder = argv[6];
+		//config =  atoi(argv[7]);
 		//visualize
 		//distribution_type
 		//min_radius
@@ -188,8 +196,8 @@ int main(int argc, char* argv[]) {
 	layer_gen.SetRadius(R3(particle_radius));
 	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
 	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.material->SetRollingFriction(.09);
-	layer_gen.material->SetSpinningFriction(.09);
+	layer_gen.material->SetRollingFriction(rolling_friction);
+	layer_gen.material->SetSpinningFriction(spinning_friction);
 //	layer_gen.AddMixtureType(MIX_TYPE1);
 //		layer_gen.AddMixtureType(MIX_TYPE2);
 //		layer_gen.AddMixtureType(MIX_TYPE3);
@@ -235,7 +243,7 @@ int main(int argc, char* argv[]) {
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
 		RunTimeStep(system_gpu, i);
-		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
+		int save_every = 1.0 / timestep / 600.0;     //save data every n steps
 		if (i % save_every == 0) {
 			stringstream ss;
 			cout << "Frame: " << file << endl;

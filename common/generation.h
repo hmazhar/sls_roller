@@ -194,9 +194,9 @@ class ParticleGenerator {
 		void computeRadius(real3 & r) {
 
 			if (use_normal_dist) {
-				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 3 * std_dev), mean - 3 * std_dev);
-				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 3 * std_dev), mean - 3 * std_dev);
-				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 3 * std_dev), mean - 3 * std_dev);
+				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 1 * std_dev), mean - 1 * std_dev);
+				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 1 * std_dev), mean - 1 * std_dev);
+				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 1 * std_dev), mean - 1 * std_dev);
 			} else {
 				r = radius;
 			}
