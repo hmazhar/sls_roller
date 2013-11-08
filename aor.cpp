@@ -290,7 +290,7 @@ int main(int argc, char* argv[]) {
 				<< ((ChLcpSolverParallel*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
-		int save_every = 1.0 / timestep / 600.0;     //save data every n steps
+		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
 		RunTimeStep(system_gpu, i);
 		if (i % save_every == 0) {
 			stringstream ss;
