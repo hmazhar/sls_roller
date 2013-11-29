@@ -96,7 +96,7 @@ void ReadInputFile(string input, ChSystemParallel* m_system) {
 		if (token == "collision_BPA:") {
 			int x, y, z;
 			ifile >> x >> y >> z;
-			((ChCollisionSystemParallel *) (m_system->GetCollisionSystem()))->setBinsPerAxis(R3(x, y, z));
+			((ChCollisionSystemParallel *) (m_system->GetCollisionSystem()))->setBinsPerAxis(I3(x, y, z));
 		}
 //--------------------------------------------------------------------------------
 		if (token == "collision_BPB:") {

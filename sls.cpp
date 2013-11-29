@@ -37,7 +37,7 @@ real time_to_run = 1;			//length of simulation
 real current_time = 0;
 
 int num_steps = time_to_run / timestep;
-int max_iteration = 15;
+int max_iteration = 20;
 int tolerance = 0;
 
 string data_folder = "data/sls";
@@ -80,7 +80,8 @@ int main(int argc, char* argv[]) {
 		particle_friction = atof(argv[3]);
 		rolling_friction = atof(argv[4]);
 		spinning_friction = atof(argv[5]);
-		data_folder = argv[6];
+		roller_velocity = atof(argv[6]);
+		data_folder = argv[7];
 		//config =  atoi(argv[7]);
 		//visualize
 		//distribution_type
@@ -115,7 +116,7 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(R3(40, 20, 200));
+	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(4, 10, 50));
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);

@@ -33,8 +33,10 @@ FIND_LIBRARY(CHRONO_LIB NAMES ChronoEngine PATHS ${CHRONO_LIB_PATH} REQUIRED)
         ${CHRONO_LIB_PARALLEL}
         ${CHRONO_LIB_OPENGL}
     )
+find_package("GLUT")
+find_package("OpenGL")
+include_directories(${INC_DIRS} ${FREEGLUT_INC_PATH})
 
-include_directories(${INC_DIRS})
 
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 #SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ")
@@ -47,8 +49,10 @@ include_directories(${INC_DIRS})
     ADD_EXECUTABLE(aor aor.cpp)		
     TARGET_LINK_LIBRARIES(aor	${CHRONO_LIB} ${GPU_LIBS})
     
-     ADD_EXECUTABLE(sls_post sls_post.cpp)		
-    TARGET_LINK_LIBRARIES(sls_post	${CHRONO_LIB} ${GPU_LIBS})
+     ADD_EXECUTABLE(sls_post sls_post.cpp xyz_io.cpp )		
+    TARGET_LINK_LIBRARIES(sls_post	${CHRONO_LIB} ${GPU_LIBS} ${FREEGLUT_LIB}
+	${GLUT_LIBRARY}
+	${OPENGL_LIBRARIES})
    
  ADD_EXECUTABLE(density density.cpp)		
     TARGET_LINK_LIBRARIES(density	${CHRONO_LIB} ${GPU_LIBS})
