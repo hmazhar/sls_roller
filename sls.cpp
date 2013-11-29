@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
 		particle_friction = atof(argv[3]);
 		rolling_friction = atof(argv[4]);
 		spinning_friction = atof(argv[5]);
-		roller_velocity = atof(argv[6]);
+		roller_velocity = -atof(argv[6]);
 		data_folder = argv[7];
 		//config =  atoi(argv[7]);
 		//visualize
