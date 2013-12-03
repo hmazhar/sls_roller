@@ -123,19 +123,17 @@ void DumpAllObjectsWithGeometryPovray(ChSystemParallel* mSys, string filename) {
 			}
 
 			else if (asset.IsType<ChEllipsoidShape>()) {
-
 				ChEllipsoidShape * ellipsoid_shape = ((ChEllipsoidShape *) (asset.get_ptr()));
 				rad_final = ellipsoid_shape->GetEllipsoidGeometry().rad;
 				Vector center = ellipsoid_shape->GetEllipsoidGeometry().center;
 				center = rot.Rotate(center);
-
 				pos_final = pos + center;
-
 				type = ELLIPSOID;
 			} else if (asset.IsType<ChBoxShape>()) {
 				ChBoxShape * box_shape = ((ChBoxShape *) (asset.get_ptr()));
 				rad_final = box_shape->GetBoxGeometry().Size;
-				pos_final = pos;
+				Vector center = box_shape->GetBoxGeometry().Pos;
+				pos_final = pos + center;
 				type = BOX;
 			} else if (asset.IsType<ChCylinderShape>()) {
 				ChCylinderShape * cylinder_shape = ((ChCylinderShape *) (asset.get_ptr()));
