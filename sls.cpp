@@ -81,7 +81,8 @@ int main(int argc, char* argv[]) {
 		rolling_friction = atof(argv[4]);
 		spinning_friction = atof(argv[5]);
 		roller_velocity = -atof(argv[6]);
-		data_folder = argv[7];
+		particle_layer_thickness = atof(argv[7]);
+		data_folder = argv[8];
 		//config =  atoi(argv[7]);
 		//visualize
 		//distribution_type
@@ -116,7 +117,7 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(300);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(ACCELERATED_PROJECTED_GRADIENT_DESCENT);
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(4, 10, 50));
+	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(40, 20, 100));
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
@@ -190,8 +191,8 @@ int main(int argc, char* argv[]) {
 	FinalizeObject(ROLLER, (ChSystemParallel *) system_gpu);
 	//68
 	int3 num_per_dir = I3(68 * 2, 6, 540 * 2);
-	//num_per_dir = I3(1, 16, 440);
-	num_per_dir = I3(74, 16, 440);
+	//num_per_dir = I3(90, 16, 1);
+	num_per_dir = I3(90, 16, 520);
 	ParticleGenerator layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
@@ -210,7 +211,7 @@ int main(int argc, char* argv[]) {
 	layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//layer_gen.addPerturbedVolumeMixture(R3(0, 1.2, 0), num_per_dir, R3(.1, .1, .1), R3(0));
-	num_per_dir = I3(74, 30, 50);
+	num_per_dir = I3(90, 30, 50);
 	//num_per_dir = I3(1, 30, 50);
 	layer_gen.addPerturbedVolume(R3(0, 3.7, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
