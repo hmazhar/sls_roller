@@ -80,7 +80,7 @@ void ReadInputFile(string input, ChSystemParallel* m_system) {
 		if (token == "compliance:") {
 			real compliance, compliance_T, alpha;
 			ifile >> compliance >> compliance_T >> alpha;
-			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetCompliance(compliance, compliance_T, alpha);
+			((ChLcpSolverParallel *) (m_system->GetLcpSolverSpeed()))->SetCompliance(alpha);
 		}
 //--------------------------------------------------------------------------------
 		if (token == "contact_recovery_speed:") {

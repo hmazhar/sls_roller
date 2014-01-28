@@ -51,7 +51,7 @@ GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
 real start_height = -1.5;
-ParticleGenerator *layer_gen;
+ParticleGenerator<ChSystemParallel> *layer_gen;
 
 template<class T>
 void RunTimeStep(T* mSys, const int frame) {
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTol(tolerance);
 	system_gpu->SetTolSpeeds(tolerance);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
-	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0, 0, 0);
+	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance( 0);
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(10);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]) {
 //	AddCollisionGeometry(TUBE, BOX, Vector(2,.05,2), Vector(0, 0, 0), quat);
 //	FinalizeObject(TUBE, (ChSystemParallel *) system_gpu);
 
-	layer_gen = new ParticleGenerator(((ChSystemParallel*) system_gpu));
+	layer_gen = new ParticleGenerator<ChSystemParallel>(((ChSystemParallel*) system_gpu));
 	layer_gen->SetDensity(particle_density);
 	layer_gen->SetRadius(R3(particle_radius));
 	layer_gen->SetNormalDistribution(particle_radius, particle_std_dev);
