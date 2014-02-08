@@ -212,7 +212,7 @@ class ParticleGenerator {
 		}
 		void computeRadius(real3 & r) {
 
-			if (use_normal_dist) {
+			if (use_normal_dist&& std_dev>0) {
 				real3 min_r = R3(radius.x - num_std_dev * std_dev,radius.y - num_std_dev * std_dev,radius.z - num_std_dev * std_dev);
 				real3 max_r = R3(radius.x + num_std_dev * std_dev,radius.y + num_std_dev * std_dev,radius.z + num_std_dev * std_dev);
 				r.x = distribution->operator()(generator);
