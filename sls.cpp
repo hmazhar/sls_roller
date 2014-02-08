@@ -2,6 +2,7 @@
 #include "common/input_output.h"
 #include "common/parser.h"
 #include "common/generation.h"
+#include "common/initialization.h"
 ChVector<> lpos(0, 0, 0);
 ChQuaternion<> quat(1, 0, 0, 0);
 

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "initialization.h"
 #include <random>
 
 enum MixType {
@@ -152,8 +153,8 @@ class ParticleGenerator {
 
 			if (use_common_material) {
 				if (useGPU) {
-				InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal() );
-				}else{
+					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
+				} else {
 					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, 2, 4);
 				}
 			} else {
@@ -194,7 +195,7 @@ class ParticleGenerator {
 				} else if (type == MIX_ELLIPSOID) {
 					mass = density * 4.0 / 3.0 * PI * r.x * r.y * r.z;
 				} else if (type == MIX_CUBE) {
-					mass = density *  r.x*2 * r.y*2 * r.z*2;
+					mass = density * r.x * 2 * r.y * 2 * r.z * 2;
 				} else if (type == MIX_TYPE1) {
 					mass = density * 4.0 / 3.0 * PI * r.x * r.x * r.x * 2;
 				} else if (type == MIX_TYPE2) {
@@ -212,9 +213,22 @@ class ParticleGenerator {
 		void computeRadius(real3 & r) {
 
 			if (use_normal_dist) {
-				r.x = fmaxf(fminf(distribution->operator()(generator), radius.x + 1 * std_dev), mean - 1 * std_dev);
-				r.y = fmaxf(fminf(distribution->operator()(generator), radius.y + 1 * std_dev), mean - 1 * std_dev);
-				r.z = fmaxf(fminf(distribution->operator()(generator), radius.z + 1 * std_dev), mean - 1 * std_dev);
+				real3 min_r = R3(radius.x - num_std_dev * std_dev,radius.y - num_std_dev * std_dev,radius.z - num_std_dev * std_dev);
+				real3 max_r = R3(radius.x + num_std_dev * std_dev,radius.y + num_std_dev * std_dev,radius.z + num_std_dev * std_dev);
+				r.x = distribution->operator()(generator);
+				while (r.x < min_r.x || r.x > max_r.x) {
+					r.x = distribution->operator()(generator);
+				}
+				r.y = distribution->operator()(generator);
+				while (r.y < min_r.y || r.y > max_r.y) {
+					r.y = distribution->operator()(generator);
+				}
+
+				r.z = distribution->operator()(generator);
+				while (r.z < min_r.z || r.z > max_r.z) {
+					r.z = distribution->operator()(generator);
+				}
+
 			} else {
 				r = radius;
 			}
@@ -222,7 +236,7 @@ class ParticleGenerator {
 
 		bool computePerturbedPos(real3 percent_perturbation, int3 num_per_dir, int3 index, real3 origin, real3 & pos) {
 
-			real3 r = radius + radius / 4.0 + R3(std_dev) * use_normal_dist;
+			real3 r = R3(max(max(radius.x, radius.y), radius.z)) + R3(std_dev) * num_std_dev * use_normal_dist;
 
 			real3 a = r * percent_perturbation;
 			real3 d = a + 2 * r;     //compute cell length
@@ -363,7 +377,9 @@ class ParticleGenerator {
 						FinalizeObject(body, (T *) mSys);
 						body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
 
-						if (useGPU == true) {total_volume+=((ChCollisionModelParallel*) body->GetCollisionModel())->getVolume();}
+						if (useGPU == true) {
+							total_volume += ((ChCollisionModelParallel*) body->GetCollisionModel())->getVolume();
+						}
 						counter++;
 					}
 				}
@@ -461,10 +477,11 @@ class ParticleGenerator {
 			ifile.close();
 		}
 
-		void SetNormalDistribution(real _mean, real _std_dev) {
+		void SetNormalDistribution(real _mean, real _std_dev, int _num_std_dev = 1) {
 			mean = _mean;
 			std_dev = _std_dev;
 			use_normal_dist = true;
+			num_std_dev = _num_std_dev;
 			distribution = new std::normal_distribution<double>(mean, std_dev);
 		}
 
@@ -519,7 +536,7 @@ class ParticleGenerator {
 		real mean_cohesion, std_dev_cohesion;
 
 		vector<real3> position;
-
+		int num_std_dev;
 		bool use_mixture;
 		vector<MixType> mixture;
 
