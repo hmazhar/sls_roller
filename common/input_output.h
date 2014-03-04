@@ -1,7 +1,6 @@
 #ifndef CHRONOMODELS_INOUT_H
 #define CHRONOMODELS_INOUT_H
 #include "common.h"
-
 #include "initialization.h"
 class CSVGen {
 	public:
@@ -99,95 +98,164 @@ void DumpAllObjects(T* mSys, string filename, string delim = ",", bool dump_vel_
 	}
 	csv_output.CloseFile();
 }
+
+void ReadAssets(ChSharedBodyPtr & mrigidBody, stringstream & ss) {
+	ShapeType type;
+	int temp_type;
+	int num_assets;
+	//cout<<ss.str()<<endl;
+	ss >> num_assets;
+	for (int i = 0; i < num_assets; i++) {
+
+		Vector rad, pos;
+		Quaternion rot;
+
+		ss >> pos.x >> pos.y >> pos.z;
+		ss >> rot.e0 >> rot.e1 >> rot.e2 >> rot.e3;
+		ss >> temp_type;
+		type = ShapeType(temp_type);
+		//cout << "reading asset " << type << endl;
+		ss >> rad.x;
+		ss >> rad.y;
+		ss >> rad.z;
+
+		AddCollisionGeometry(mrigidBody, type, rad, pos, rot);
+	}
+}
+
+template<class T>
+void ReadBody(T* mSys, stringstream & ss) {
+	ChSharedBodyPtr mrigidBody;
+	mrigidBody = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
+
+	float mass;
+	Vector pos, vel, wvel;
+	Quaternion rot;
+	int fam, no_col_fam;
+	bool active;
+	ChSharedPtr<ChMaterialSurface> material;
+	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
+	ss >> mass >> active;
+	ss >> material->static_friction;
+	ss >> material->sliding_friction;
+	ss >> material->rolling_friction;
+	ss >> material->spinning_friction;
+	ss >> material->restitution;
+	ss >> material->cohesion;
+	ss >> material->dampingf;
+	ss >> material->compliance;
+	ss >> material->complianceT;
+	ss >> material->complianceRoll;
+	ss >> material->complianceSpin;
+	ss >> pos.x >> pos.y >> pos.z;
+	ss >> rot.e0 >> rot.e1 >> rot.e2 >> rot.e3;
+	ss >> vel.x >> vel.y >> vel.z;
+	ss >> wvel.x >> wvel.y >> wvel.z;
+	ss >> fam >> no_col_fam;
+	//cout<<"reading body"<<endl;
+	//	cout<<ss.str()<<endl;
+	InitObject(mrigidBody, mass, pos, rot, material, true, !active, fam, no_col_fam);
+	mrigidBody->SetPos_dt(vel);
+	mrigidBody->SetWvel_loc(vel);
+	ReadAssets(mrigidBody, ss);
+
+	FinalizeObject(mrigidBody, (ChSystemParallel*) mSys);
+}
+
 template<class T>
 void ReadAllObjectsWithGeometryChrono(T* mSys, string filename, bool GPU = true) {
 	ifstream ifile(filename.c_str());
 	int number_of_objects = 0;
 	string line;
-
+	vector<string> lines;
 	while (std::getline(ifile, line)) {
+		std::replace(line.begin(), line.end(), ',', ' ');
+		lines.push_back(line);
 		++number_of_objects;
 	}
 	ifile.close();
-	ifile.open(filename.c_str());
+	cout<<"done counting"<<endl;
+
 	for (int i = 0; i < number_of_objects; i++) {
-		Vector pos, vel;
-		Quaternion rot;
-		ShapeType type;
-		int temp_type;
-
-		Vector rad;
-		float mass;
-		bool active;
-		int family, nocoll_family;
-		std::getline(ifile, line);
-		std::replace(line.begin(), line.end(), ',', ' ');
-		stringstream ss(line);
-		//cout << line << endl;
-		ChSharedPtr<ChMaterialSurface> material;
-		material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-
-		ss >> mass >> active;
-		ss >> material->static_friction;
-		ss >> material->sliding_friction;
-		ss >> material->rolling_friction;
-		ss >> material->spinning_friction;
-		ss >> material->restitution;
-		ss >> material->cohesion;
-		ss >> material->dampingf;
-		ss >> material->compliance;
-		ss >> material->complianceT;
-		ss >> material->complianceRoll;
-		ss >> material->complianceSpin;
-		ss >> pos.x >> pos.y >> pos.z;
-		ss >> rot.e0 >> rot.e1 >> rot.e2 >> rot.e3;
-		ss >> vel.x >> vel.y >> vel.z;
-		ss >> temp_type;
-		type = ShapeType(temp_type);
-
-		if (type == SPHERE) {
-			ss >> rad.x;
-		} else if (type == ELLIPSOID) {
-			ss >> rad.x;
-			ss >> rad.y;
-			ss >> rad.z;
-		} else if (type == BOX) {
-			ss >> rad.x;
-			ss >> rad.y;
-			ss >> rad.z;
-		} else if (type == CYLINDER) {
-			ss >> rad.x;
-			ss >> rad.y;
-		} else if (type == CONE) {
-			ss >> rad.x;
-			ss >> rad.y;
-		}
-//		cout<<mass<<" "<<active<<" "<<family<<" "<<nocoll_family<<" ";
-//		cout<<pos.x<<" "<<pos.y<<" "<<pos.z<<" ";
-//		cout<<vel.x<<" "<<vel.y<<" "<<vel.z<<" ";
-//		cout<<rot.e0<<" "<<rot.e1<<" "<<rot.e2<<" "<<rot.e3<<" ";
-//		cout<<type<<" "<<rad.x<<" "<<rad.y<<" "<<rad.z<<endl;
-		ChSharedBodyPtr mrigidBody;
-		if (GPU) {
-			mrigidBody = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-		} else {
-			mrigidBody = ChSharedBodyPtr(new ChBody());
-		}
-		InitObject(mrigidBody, mass, pos, rot, material, true, !active, 2, 4);
-		AddCollisionGeometry(mrigidBody, type, rad, ChVector<>(0, 0, 0), QUNIT);
-		if (type == SPHERE) {
-			mrigidBody->SetInertiaXX(ChVector<>(2 / 5.0 * mass * rad.x * rad.x, 2 / 5.0 * mass * rad.x * rad.x, 2 / 5.0 * mass * rad.x * rad.x));
-		}
-
-		if (GPU) {
-			FinalizeObject(mrigidBody, (ChSystemParallel*) mSys);
-		} else {
-			FinalizeObject(mrigidBody, (ChSystem*) mSys);
-		}
-
+		if(i%1000==0){cout<<i<<endl;}
+		stringstream ss(lines[i]);
+		ReadBody(mSys, ss);
 	}
+	cout<<"done generating"<<endl;
 	//cout<<"DONE"<<endl;
 }
+void GenAssets(ChBody* abody, CSVGen & csv_output) {
+	csv_output << abody->GetAssets().size();
+	for (int j = 0; j < abody->GetAssets().size(); j++) {
+		ChSharedPtr<ChAsset> asset = abody->GetAssets().at(j);
+		ChVisualization* visual_asset = ((ChVisualization *) (asset.get_ptr()));
+		Vector center = visual_asset->Pos;
+		Quaternion rot = visual_asset->Rot.Get_A_quaternion();
+		Vector rad_final;
+
+		csv_output << R3(center.x, center.y, center.z);
+		csv_output << R4(rot.e0, rot.e1, rot.e2, rot.e3);
+
+		ShapeType type = SPHERE;
+		if (asset.IsType<ChSphereShape>()) {
+			ChSphereShape * sphere_shape = ((ChSphereShape *) (asset.get_ptr()));
+			float radius = sphere_shape->GetSphereGeometry().rad;
+			rad_final = Vector(radius, 0, 0);
+			type = SPHERE;
+		}
+
+		else if (asset.IsType<ChEllipsoidShape>()) {
+			ChEllipsoidShape * ellipsoid_shape = ((ChEllipsoidShape *) (asset.get_ptr()));
+			rad_final = ellipsoid_shape->GetEllipsoidGeometry().rad;
+			type = ELLIPSOID;
+		} else if (asset.IsType<ChBoxShape>()) {
+			ChBoxShape * box_shape = ((ChBoxShape *) (asset.get_ptr()));
+			rad_final = box_shape->GetBoxGeometry().Size;
+			type = BOX;
+		} else if (asset.IsType<ChCylinderShape>()) {
+			ChCylinderShape * cylinder_shape = ((ChCylinderShape *) (asset.get_ptr()));
+			double rad = cylinder_shape->GetCylinderGeometry().rad;
+			double height = cylinder_shape->GetCylinderGeometry().p1.y - cylinder_shape->GetCylinderGeometry().p2.y;
+			rad_final.x = rad;
+			rad_final.y = height;
+			rad_final.z = rad;
+			type = CYLINDER;
+		} else if (asset.IsType<ChConeShape>()) {
+			ChConeShape * cone_shape = ((ChConeShape *) (asset.get_ptr()));
+			rad_final.x = cone_shape->GetConeGeometry().rad.x;
+			rad_final.y = cone_shape->GetConeGeometry().rad.y;
+			rad_final.z = cone_shape->GetConeGeometry().rad.z;
+			type = CONE;
+		}
+
+		csv_output << type;
+		csv_output << R3(rad_final.x, rad_final.y, rad_final.z);
+
+	}
+}
+void GenObject(ChBody* abody, CSVGen & csv_output) {
+
+	csv_output << R2(abody->GetMass(), abody->IsActive());
+	csv_output
+			<< R4(abody->GetMaterialSurface()->static_friction, abody->GetMaterialSurface()->sliding_friction, abody->GetMaterialSurface()->rolling_friction,
+					abody->GetMaterialSurface()->spinning_friction);
+	csv_output << R3(abody->GetMaterialSurface()->restitution, abody->GetMaterialSurface()->cohesion, abody->GetMaterialSurface()->dampingf);
+	csv_output << R4(abody->GetMaterialSurface()->compliance, abody->GetMaterialSurface()->complianceT, abody->GetMaterialSurface()->complianceRoll, abody->GetMaterialSurface()->complianceSpin);
+	csv_output << R3(abody->GetPos().x, abody->GetPos().y, abody->GetPos().z);
+	csv_output << R4(abody->GetRot().e0, abody->GetRot().e1, abody->GetRot().e2, abody->GetRot().e3);
+	csv_output << R3(abody->GetPos_dt().x, abody->GetPos_dt().y, abody->GetPos_dt().z);
+	csv_output << R3(abody->GetWvel_loc().x, abody->GetWvel_loc().y, abody->GetWvel_loc().z);
+	int family, nocoll_family;
+
+	family = ((ChCollisionModelParallel*) abody->GetCollisionModel())->GetFamily();
+	nocoll_family = ((ChCollisionModelParallel*) abody->GetCollisionModel())->GetNoCollFamily();
+
+	csv_output << family;
+	csv_output << nocoll_family;
+	GenAssets(abody, csv_output);
+	csv_output.Endline();
+}
+
 template<class T>
 void DumpAllObjectsWithGeometryChrono(T* mSys, string filename, bool GPU = true) {
 
@@ -195,103 +263,7 @@ void DumpAllObjectsWithGeometryChrono(T* mSys, string filename, bool GPU = true)
 	csv_output.OpenFile(filename.c_str());
 	for (int i = 0; i < mSys->Get_bodylist()->size(); i++) {
 		ChBody* abody = mSys->Get_bodylist()->at(i);
-		const Vector pos = abody->GetPos();
-		const Vector vel = abody->GetPos_dt();
-		Quaternion b_rot = abody->GetRot();
-		Vector pos_final, rad_final;
-		ShapeType type = SPHERE;
-
-		for (int j = 0; j < abody->GetAssets().size(); j++) {
-			Quaternion rot(1, 0, 0, 0);
-			ChSharedPtr<ChAsset> asset = abody->GetAssets().at(j);
-			ChVisualization* visual_asset = ((ChVisualization *) (asset.get_ptr()));
-			Vector center = visual_asset->Pos;
-			center = b_rot.Rotate(center);
-			pos_final = pos + center;
-			Quaternion lrot = visual_asset->Rot.Get_A_quaternion();
-			rot = b_rot % lrot;
-			rot.Normalize();
-			if (asset.IsType<ChSphereShape>()) {
-				ChSphereShape * sphere_shape = ((ChSphereShape *) (asset.get_ptr()));
-				float radius = sphere_shape->GetSphereGeometry().rad;
-				rad_final.x = radius;
-				rad_final.y = radius;
-				rad_final.z = radius;
-				type = SPHERE;
-			}
-
-			else if (asset.IsType<ChEllipsoidShape>()) {
-				ChEllipsoidShape * ellipsoid_shape = ((ChEllipsoidShape *) (asset.get_ptr()));
-				rad_final = ellipsoid_shape->GetEllipsoidGeometry().rad;
-				type = ELLIPSOID;
-			} else if (asset.IsType<ChBoxShape>()) {
-				ChBoxShape * box_shape = ((ChBoxShape *) (asset.get_ptr()));
-				rad_final = box_shape->GetBoxGeometry().Size;
-				type = BOX;
-			} else if (asset.IsType<ChCylinderShape>()) {
-				ChCylinderShape * cylinder_shape = ((ChCylinderShape *) (asset.get_ptr()));
-				double rad = cylinder_shape->GetCylinderGeometry().rad;
-				double height = cylinder_shape->GetCylinderGeometry().p1.y - cylinder_shape->GetCylinderGeometry().p2.y;
-				rad_final.x = rad;
-				rad_final.y = height;
-				rad_final.z = rad;
-				type = CYLINDER;
-			} else if (asset.IsType<ChConeShape>()) {
-				ChConeShape * cone_shape = ((ChConeShape *) (asset.get_ptr()));
-				rad_final.x = cone_shape->GetConeGeometry().rad.x;
-				rad_final.y = cone_shape->GetConeGeometry().rad.y;
-				rad_final.z = cone_shape->GetConeGeometry().rad.z;
-				type = CONE;
-			}
-			int family, nocoll_family;
-
-			if (GPU) {
-				family = ((ChCollisionModelParallel*) abody->GetCollisionModel())->GetFamily();
-				nocoll_family = ((ChCollisionModelParallel*) abody->GetCollisionModel())->GetNoCollFamily();
-			} else {
-				family = ((ChModelBullet*) abody->GetCollisionModel())->GetFamilyGroup();
-				nocoll_family = ((ChModelBullet*) abody->GetCollisionModel())->GetFamilyMask();
-
-			}
-			csv_output << R2(abody->GetMass(), abody->IsActive());
-
-			csv_output
-					<< R4(abody->GetMaterialSurface()->static_friction, abody->GetMaterialSurface()->sliding_friction, abody->GetMaterialSurface()->rolling_friction,
-							abody->GetMaterialSurface()->spinning_friction);
-
-			csv_output << R3(abody->GetMaterialSurface()->restitution, abody->GetMaterialSurface()->cohesion, abody->GetMaterialSurface()->dampingf);
-			csv_output
-					<< R4(abody->GetMaterialSurface()->compliance, abody->GetMaterialSurface()->complianceT, abody->GetMaterialSurface()->complianceRoll, abody->GetMaterialSurface()->complianceSpin);
-
-			csv_output << R3(pos_final.x, pos_final.y, pos_final.z);
-			csv_output << R4(rot.e0, rot.e1, rot.e2, rot.e3);
-			csv_output << R3(vel.x, vel.y, vel.z);
-
-			if (asset.IsType<ChSphereShape>()) {
-				csv_output << type;
-				csv_output << rad_final.x;
-				csv_output.Endline();
-			} else if (asset.IsType<ChEllipsoidShape>()) {
-				csv_output << type;
-				csv_output << R3(rad_final.x, rad_final.y, rad_final.z);
-				csv_output.Endline();
-			} else if (asset.IsType<ChBoxShape>()) {
-				csv_output << type;
-				csv_output << R3(rad_final.x, rad_final.y, rad_final.z);
-				csv_output.Endline();
-			} else if (asset.IsType<ChCylinderShape>()) {
-				csv_output << type;
-				csv_output << R2(rad_final.x, rad_final.y);
-				csv_output.Endline();
-			} else if (asset.IsType<ChConeShape>()) {
-				csv_output << type;
-				csv_output << R2(rad_final.x, rad_final.y);
-				csv_output.Endline();
-			} else {
-				csv_output << -1;
-				csv_output.Endline();
-			}
-		}
+		GenObject(abody, csv_output);
 	}
 	csv_output.CloseFile();
 }

@@ -5,6 +5,24 @@ include(cmake/ParallelUtils.cmake)
 # Additional packages
 enable_openmp_support()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  # using Clang
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	SET(GCC_OPT "sse" CACHE STRING "gcc optimizations")
+	SET_PROPERTY(CACHE GCC_OPT PROPERTY STRINGS "mmx" "sse" "sse2" "sse3" "ssse3" "sse4.1" "sse4.2" "avx")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m${GCC_OPT}")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m${GCC_OPT}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+	SET(INTEL_OPT "SSE2" CACHE STRING "intel optimizations")
+	SET_PROPERTY(CACHE INTEL_OPT PROPERTY STRINGS "SSE2" "SSE3" "SSSE3" "SSE4.1" "SSE4.2" "AVX" "CORE-AVX-I" "CORE-AVX2")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -x${INTEL_OPT}")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -x${INTEL_OPT}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  # using Visual Studio C++
+endif()
+
+
+
 # User specified path to ChronoEngine
 SET(CHRONO_INC       ""   CACHE PATH "Where is ChronoEngine Source located")
 SET(CHRONO_PARALLEL_INC       ""   CACHE PATH "Where is ChronoEngine Source located")

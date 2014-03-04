@@ -1,5 +1,9 @@
+#ifndef CHRONOMODELS_GENERATE_H
+#define CHRONOMODELS_GENERATE_H
+
 #include "common.h"
 #include "initialization.h"
+#include "input_output.h"
 #include <random>
 
 enum MixType {
@@ -76,6 +80,7 @@ class VoronoiSampler {
 		int counter;
 
 };
+
 template<class T>
 class ParticleGenerator {
 	public:
@@ -92,12 +97,15 @@ class ParticleGenerator {
 			volume_cylinder = false;
 			useGPU = GPU;
 			total_volume = total_mass = 0;
+			active = false;
 		}
 
 		void SetMass(real m) {
 			mass = m;
 		}
-
+		void SetActive(bool act) {
+			active = act;
+		}
 		void SetDensity(real d) {
 			density = d;
 			use_density = true;
@@ -107,42 +115,6 @@ class ParticleGenerator {
 			radius = r;
 		}
 
-		void addHCPSheet(int2 grid, real3 origin, bool active, real3 vel) {
-			real offset = 0;
-			int grid_x = grid.x;
-			int grid_z = grid.y;
-			real global_x = origin.x;
-			real global_z = origin.z;
-			real x = 0, y = origin.y, z = 0;
-
-			for (int i = 0; i < grid_x; i++) {
-				for (int k = 0; k < grid_z; k++) {
-					if (useGPU) {
-						body = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-					} else {
-						body = ChSharedBodyPtr(new ChBody());
-					}
-					offset = (k % 2 != 0) ? radius.x : 0;
-					x = i * 2 * radius.x + offset - grid_x * 2 * radius.x / 2.0 + global_x;
-					z = k * (sqrt(3.0) * radius.x) - grid_z * sqrt(3.0) * radius.x / 2.0 + global_z;
-
-					InitObject(body, mass, Vector(x, y, z), Quaternion(1, 0, 0, 0), material, true, !active, -1, i);
-					AddCollisionGeometry(body, SPHERE, ChVector<>(radius.x, radius.x, radius.x), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-					body->SetPos_dt(ChVector<>(vel.x, vel.y, vel.z));
-					FinalizeObject(body, (T *) mSys);
-				}
-			}
-		}
-
-		void addHCPCube(int3 grid, bool active, real3 origin, real3 vel) {
-			real offset_x = 0, offset_z = 0, height = 0;
-			for (int j = 0; j < grid.y; j++) {
-				height = j * (sqrt(3.0) * radius.x) * 1.15;
-				offset_x = offset_z = (j % 2 != 0) ? radius.x : 0;
-				real3 new_origin = R3(offset_x + origin.x, height + origin.y, offset_z + origin.z);
-				addHCPSheet(I2(grid.x, grid.z), new_origin, active, vel);
-			}
-		}
 		void createBody(ChSharedBodyPtr &body, real3 pos, real mass) {
 
 			if (useGPU) {
@@ -150,15 +122,15 @@ class ParticleGenerator {
 			} else {
 				body = ChSharedBodyPtr(new ChBody());
 			}
-
+			body_list.push_back(body);
 			if (use_common_material) {
 				if (useGPU) {
-					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
+					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, active, -1, mSys->GetNbodiesTotal());
 				} else {
-					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, 2, 4);
+					InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, active, 2, 4);
 				}
 			} else {
-				InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, 2, mSys->GetNbodiesTotal() + 2);
+				InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, active, 2, mSys->GetNbodiesTotal() + 2);
 				if (use_normal_friction) {
 					body->GetMaterialSurface()->SetFriction(distribution_friction->operator()(generator));
 				} else {
@@ -212,9 +184,9 @@ class ParticleGenerator {
 		}
 		void computeRadius(real3 & r) {
 
-			if (use_normal_dist&& std_dev>0) {
-				real3 min_r = R3(radius.x - num_std_dev * std_dev,radius.y - num_std_dev * std_dev,radius.z - num_std_dev * std_dev);
-				real3 max_r = R3(radius.x + num_std_dev * std_dev,radius.y + num_std_dev * std_dev,radius.z + num_std_dev * std_dev);
+			if (use_normal_dist && std_dev > 0) {
+				real3 min_r = R3(radius.x - num_std_dev * std_dev, radius.y - num_std_dev * std_dev, radius.z - num_std_dev * std_dev);
+				real3 max_r = R3(radius.x + num_std_dev * std_dev, radius.y + num_std_dev * std_dev, radius.z + num_std_dev * std_dev);
 				r.x = distribution->operator()(generator);
 				while (r.x < min_r.x || r.x > max_r.x) {
 					r.x = distribution->operator()(generator);
@@ -263,35 +235,36 @@ class ParticleGenerator {
 			return true;
 		}
 
-		void addPerturbedVolume(real3 origin, ShapeType type, int3 num_per_dir, real3 percent_perturbation, real3 vel, bool random = false) {
+		void addHCPSheet(int2 grid, real3 origin, real3 vel) {
+			real offset = 0;
+			int grid_x = grid.x;
+			int grid_z = grid.y;
+			real global_x = origin.x;
+			real global_z = origin.z;
+			real x = 0, y = origin.y, z = 0;
 
-			int counter = 0;
+			for (int i = 0; i < grid_x; i++) {
+				for (int k = 0; k < grid_z; k++) {
+					offset = (k % 2 != 0) ? radius.x : 0;
+					x = i * 2 * radius.x + offset - grid_x * 2 * radius.x / 2.0 + global_x;
+					z = k * (sqrt(3.0) * radius.x) - grid_z * sqrt(3.0) * radius.x / 2.0 + global_z;
 
-			for (int i = 0; i < num_per_dir.x; i++) {
-				for (int j = 0; j < num_per_dir.y; j++) {
-					for (int k = 0; k < num_per_dir.z; k++) {
-						real3 r = R3(0), pos = R3(0);
-						bool success = computePerturbedPos(percent_perturbation, num_per_dir, I3(i, j, k), origin, pos);
-						if (success == false) {
-							continue;
-						}
-						computeRadius(r);
-						computeMassType(type, r);
-
-						createBody(body, pos, mass);
-
-						AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-
-						FinalizeObject(body, (T *) mSys);
-						body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
-						counter++;
-					}
+					createBody(body, R3(x, y, z), mass);
+					AddCollisionGeometry(body, SPHERE, ChVector<>(radius.x, radius.x, radius.x), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+					body->SetPos_dt(ChVector<>(vel.x, vel.y, vel.z));
+					FinalizeObject(body, (T *) mSys);
 				}
 			}
 		}
 
-		void addVolume(real3 origin, ShapeType type, int3 num_per_dir, real3 vel) {
-			addPerturbedVolume(origin, type, num_per_dir, R3(0, 0, 0), vel, false);
+		void addHCPCube(int3 grid, real3 origin, real3 vel) {
+			real offset_x = 0, offset_z = 0, height = 0;
+			for (int j = 0; j < grid.y; j++) {
+				height = j * (sqrt(3.0) * radius.x) * 1.15;
+				offset_x = offset_z = (j % 2 != 0) ? radius.x : 0;
+				real3 new_origin = R3(offset_x + origin.x, height + origin.y, offset_z + origin.z);
+				addHCPSheet(I2(grid.x, grid.z), new_origin, vel);
+			}
 		}
 
 		void addPerturbedVolumeMixture(real3 origin, int3 num_per_dir, real3 percent_perturbation, real3 vel, bool random = false) {
@@ -386,6 +359,10 @@ class ParticleGenerator {
 			}
 		}
 
+		void addVolume(real3 origin, int3 num_per_dir, real3 vel) {
+			addPerturbedVolumeMixture(origin, num_per_dir, R3(0, 0, 0), vel, false);
+		}
+
 		void addSnowball(real3 origin, ShapeType type, real rad, real3 vel) {
 
 			snow_sampler.SetSize(R3(-rad * 2, -rad * 2, -rad * 2), R3(rad * 2, rad * 2, rad * 2));
@@ -409,11 +386,6 @@ class ParticleGenerator {
 
 					for (int i = 0; i < grid_x; i++) {
 						for (int k = 0; k < grid_z; k++) {
-							if (useGPU) {
-								body = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-							} else {
-								body = ChSharedBodyPtr(new ChBody());
-							}
 
 							offset = (k % 2 != 0) ? radius.x : 0;
 							x = i * 2 * radius.x + offset - grid_x * 2 * radius.x / 2.0 + global_x;
@@ -426,24 +398,8 @@ class ParticleGenerator {
 								computeRadius(r);
 								pos += origin;
 
-								if (use_common_material) {
-									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), material, true, false, -1, mSys->GetNbodiesTotal());
-								} else {
-									InitObject(body, mass, Vector(pos.x, pos.y, pos.z), Quaternion(1, 0, 0, 0), true, false, -1, mSys->GetNbodiesTotal());
-									if (use_normal_friction) {
-										body->GetMaterialSurface()->SetFriction(distribution_friction->operator()(generator));
-									} else {
-										body->GetMaterialSurface()->SetFriction(material->GetSfriction());
-									}
-									if (use_normal_cohesion) {
-										body->GetMaterialSurface()->SetCohesion(snow_sampler.GetProperty(pos - origin));
-									} else {
-										body->GetMaterialSurface()->SetCohesion(material->GetCohesion());
-									}
-								}
-
+								createBody(body, pos, mass);
 								AddCollisionGeometry(body, type, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-
 								FinalizeObject(body, (T *) mSys);
 								body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
 							}
@@ -453,28 +409,6 @@ class ParticleGenerator {
 				}
 			}
 
-		}
-
-		void loadAscii(string filename, real3 origin, ShapeType type, real3 rad, real3 vel, real3 scale) {
-			ifstream ifile(filename.c_str());
-			string temp;
-
-			while (ifile.fail() == false) {
-				getline(ifile, temp);
-				if (ifile.fail() == true) {
-					return;
-				}
-				stringstream ss;
-				ss << temp;
-				real3 pos;
-				ss >> pos.x >> pos.y >> pos.z;
-
-				createBody(body, pos * scale + origin, mass);
-				AddCollisionGeometry(body, type, ChVector<>(rad.x, rad.y, rad.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-				FinalizeObject(body, (T *) mSys);
-				body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
-			}
-			ifile.close();
 		}
 
 		void SetNormalDistribution(real _mean, real _std_dev, int _num_std_dev = 1) {
@@ -512,6 +446,47 @@ class ParticleGenerator {
 			cylinder_rad = rad;
 
 		}
+
+		void DumpAscii(string filename, bool only_active = false) {
+
+			CSVGen csv_output;
+			csv_output.delim = " ";
+			csv_output.OpenFile(filename.c_str());
+			for (int i = 0; i < body_list.size(); i++) {
+				if (only_active) {
+					if (body_list[i]->IsActive() == false) {
+						continue;
+					}
+				}
+
+				csv_output << R3(body_list[i]->GetPos().x, body_list[i]->GetPos().y, body_list[i]->GetPos().z);
+				csv_output.Endline();
+			}
+			csv_output.CloseFile();
+		}
+
+		void loadAscii(string filename, real3 origin, ShapeType type, real3 rad, real3 vel, real3 scale) {
+			ifstream ifile(filename.c_str());
+			string temp;
+
+			while (ifile.fail() == false) {
+				getline(ifile, temp);
+				if (ifile.fail() == true) {
+					return;
+				}
+				stringstream ss;
+				ss << temp;
+				real3 pos;
+				ss >> pos.x >> pos.y >> pos.z;
+
+				createBody(body, pos * scale + origin, mass);
+				AddCollisionGeometry(body, type, ChVector<>(rad.x, rad.y, rad.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+				FinalizeObject(body, (T *) mSys);
+				body->SetPos_dt(Vector(vel.x, vel.y, vel.z));
+			}
+			ifile.close();
+		}
+
 		std::default_random_engine generator;
 		real mean, std_dev;
 		ChSharedBodyPtr body;
@@ -523,7 +498,7 @@ class ParticleGenerator {
 		bool use_density;
 		bool use_common_material;
 		bool useGPU;
-
+		bool active;
 		real cylinder_rad;
 		bool volume_cylinder;
 		ChSharedPtr<ChMaterialSurface> material;
@@ -539,12 +514,12 @@ class ParticleGenerator {
 		int num_std_dev;
 		bool use_mixture;
 		vector<MixType> mixture;
+		vector<ChSharedBodyPtr> body_list;
 
 		std::normal_distribution<double>* distribution;
 		std::normal_distribution<double> *distribution_friction;
 		std::normal_distribution<double> *distribution_cohesion;
 
 		VoronoiSampler snow_sampler;
-
 };
-
+#endif

@@ -8,7 +8,6 @@
 
 //System level Includes
 #include "physics/ChSystem.h"
-#include "physics/ChSystemOpenMP.h"
 #include "physics/ChApidll.h"
 #include "physics/ChContactContainer.h"
 
@@ -33,7 +32,9 @@
 //Include Parallel system and descriptor
 #include "ChSystemParallel.h"
 #include "ChLcpSystemDescriptorParallel.h"
-
+//hdf5
+#include "hdf5.h"
+#include "hdf5_hl.h"
 
 //Enable OpenGL visualizer
 #include "ChOpenGL.h"
