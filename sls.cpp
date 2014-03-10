@@ -74,6 +74,7 @@ void RunTimeStep(T* mSys, const int frame) {
 int main(int argc, char* argv[]) {
 	bool visualize = false;
 	int config = 0;
+	bool full_mix = false;
 	if (argc > 1) {
 		visualize = atoi(argv[1]);
 		particle_friction = atof(argv[2]);
@@ -81,7 +82,8 @@ int main(int argc, char* argv[]) {
 		spinning_friction = atof(argv[4]);
 		roller_velocity = -atof(argv[5]);
 		particle_layer_thickness = atof(argv[6]);
-		data_folder = argv[7];
+		full_mix = atoi(argv[7]);
+		data_folder = argv[8];
 	}
 	//cout << "Mass, Radius, Friction_Sphere, Friction_Plate, Data Folder, create_particle_plate all_three_kinds, particle configuration" << endl;
 	//=========================================================================================================
@@ -163,13 +165,15 @@ int main(int argc, char* argv[]) {
 	layer_gen.material->SetFriction(particle_friction);
 	layer_gen.material->SetRollingFriction(rolling_friction);
 	layer_gen.material->SetSpinningFriction(spinning_friction);
-	layer_gen.AddMixtureType(MIX_TYPE1);
-	layer_gen.AddMixtureType(MIX_TYPE2);
-	layer_gen.AddMixtureType(MIX_TYPE3);
-	layer_gen.AddMixtureType(MIX_TYPE4);
 	layer_gen.AddMixtureType(MIX_SPHERE);
-	layer_gen.AddMixtureType(MIX_ELLIPSOID);
-	layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
+	if (full_mix) {
+		layer_gen.AddMixtureType(MIX_TYPE1);
+		layer_gen.AddMixtureType(MIX_TYPE2);
+		layer_gen.AddMixtureType(MIX_TYPE3);
+		layer_gen.AddMixtureType(MIX_TYPE4);
+		layer_gen.AddMixtureType(MIX_ELLIPSOID);
+		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
+	}
 
 	//layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
