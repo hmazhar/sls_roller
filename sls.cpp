@@ -32,7 +32,7 @@ real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
 real gravity = -9810;     //acceleration due to gravity
-real timestep = .00001;     //step size
+real timestep = .000005;     //step size
 real time_to_run = 1;     //length of simulation
 real current_time = 0;
 
@@ -92,6 +92,7 @@ int main(int argc, char* argv[]) {
 	//=========================================================================================================
 	//system_gpu->SetMaxiter(max_iteration);
 	//system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
+	system_gpu->DoThreadTuning(false);
 	//((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iter);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration * 2);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
