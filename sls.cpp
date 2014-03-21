@@ -158,7 +158,8 @@ int main(int argc, char* argv[]) {
 	//68
 	int3 num_per_dir = I3(1, 1, 1);
 	//num_per_dir = I3(90, 16, 1);
-	num_per_dir = I3(90, 16, 540);
+
+	num_per_dir = I3(90, 16*particle_layer_thickness/.2032, 540);
 	ParticleGenerator < ChSystemParallelDVI > layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
