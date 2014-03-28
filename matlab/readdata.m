@@ -1,77 +1,103 @@
 %clear
-%clc
+clc
+close all
+format compact;
 
-%M = csvread('1200.txt');
-%N = csvread('200.txt');
-%M = max(min(M,1),-5);
+%    T0 = csvread('SLS_SPEED_NEW4/sls_speed_sphere_76.2_169.txt');
+%    T1 = csvread('SLS_SPEED_NEW4/sls_speed_sphere_101.6_155.txt');
+%    T2 = csvread('SLS_SPEED_NEW4/sls_speed_sphere_127_124.txt');
+%    T3 = csvread('SLS_SPEED_NEW4/sls_speed_sphere_152.4_103.txt');
+%    T4 = csvread('SLS_SPEED_NEW4/sls_speed_sphere_177.8_89.txt');
+%
+%    T1 = csvread('SLS_SPEED_NEW4/sls_speed_mixed_101.6_108.txt');
+%    T2 = csvread('SLS_SPEED_NEW4/sls_speed_mixed_127_107.txt');
+%    T3 = csvread('SLS_SPEED_NEW4/sls_speed_mixed_152.4_103.txt');
+%    T4 = csvread('SLS_SPEED_NEW4/sls_speed_mixed_177.8_83.txt');
+%
+%    T1 = csvread('SLS_SPEED_NEW3/sls_speed_mixed_101.6_147.txt');
+%    T2 = csvread('SLS_SPEED_NEW3/sls_speed_mixed_127_117.txt');
+%    T3 = csvread('SLS_SPEED_NEW3/sls_speed_mixed_152.4_98.txt');
+%    T4 = csvread('SLS_SPEED_NEW3/sls_speed_mixed_177.8_88.txt');
+%
+%    [rows(1) cols(1)] = size(T1);
+%    [rows(2) cols(2)] = size(T2);
+%    [rows(3) cols(3)] = size(T3);
+%    [rows(4) cols(4)] = size(T4);
+%    TT1 = [T1;zeros( max(rows)-rows(1),15)];
+%    TT2 = [T2;zeros( max(rows)-rows(2),15)];
+%    TT3 = [T3;zeros( max(rows)-rows(3),15)];
+%    TT4 = [T4;zeros( max(rows)-rows(4),15)];
+%    T = cat(3, TT1,TT2,TT3,TT4);
 
-xx = N(10:631966,1);
-yy = N(10:631966,3);
-zz = N(10:631966,2);
+max_fun = @(x)max(x)
 
-xx = max(min(xx,3),-3);
-yy = max(min(yy,3),-3);
+load('NEW4_S.mat');
+r = size(T,1);
+speeds = ['101.6 mm/s'; '127.0 mm/s'; '152.4 mm/s'; '177.8 mm/s'];
+speeds_str = cellstr(speeds);
+figure
+for  i =1:4
+    xx = T(20:r,1,i);
+    yy = T(20:r,3,i);
+    zz = T(20:r,2,i);
+    
+    x_data = [];
+    y_data = [];
+    z_data = [];
+    bounds_x = [-2.5 2.5];
+    bounds_y = [10 15];
+    bounds_z = [.2 .5];
+    count = 1;
+    for j = 1:size(xx)
+        if(xx(j)>bounds_x(1)  && xx(j) <bounds_x(2))
+            if(yy(j)>bounds_y(1) && yy(j) <bounds_y(2))
+                if(zz(j)>bounds_z(1) && zz(j)< bounds_z(2) )
+                    x_data(count) = xx(j);
+                    y_data(count) = yy(j);
+                    z_data(count) = zz(j);
+                end
+                count = count +1;
+            end
+        end
+    end
+    clear xx yy zz;
+    
+    subplot(2, 2, i);
+    tx = bounds_x(1):.2:bounds_x(2);
+    ty = bounds_y(1):.2:bounds_y(2);
+    [gx,gy] = meshgrid(tx,ty);
+    grid_centers = [gx(:),gy(:)];
+    kdtreeobj = KDTreeSearcher(grid_centers);
+    accum_indicies = kdtreeobj.knnsearch([x_data',y_data']); % # classification
+    
+    results = accumarray(accum_indicies,z_data',[],max_fun );
+    results(results<bounds_z(1))=NaN;
+    mn = mean(results);
+    sd = std(results);
+    results(results>mn+5*sd)=NaN;
+    results(results<mn-5*sd)=NaN;
+    dist = fitdist(results, 'beta');
+    normal_data = random(dist, size(results,1),1);
+    %hold on
+    %histfit(normal_data,25,'beta')
+    hist(results(:),100)
+    alpha(0.5);
+    %bar(hist(results(:),25) ./ sum(hist(results(:),25)))
+    %hold off
+    title(speeds_str(i));
+    [skewness(results(:)) skewness(normal_data(:)) ; kurtosis(results(:)) kurtosis(normal_data(:))]
+    skew(i) = skewness(normal_data(:));
+    kurt(i) = kurtosis (normal_data(:));
+end
+figure
+subplot(1, 2, 1);
+plot(skew);
+title('skewness');
+subplot(1, 2, 2);
+plot(kurt);
+title('kurtosis');
 
-%zz = max(min(zz,.6),.1);
-%rad = M(10:371486,9);
-minX = min(xx);
-maxX = max(xx);
-minY = min(yy);
-maxY = max(yy);
-
-% x_bin_edges = minX:.1:maxX;
-% y_bin_edges =  minY:.1:maxY;
-% [average, stdev, centers, population, out_of_range] = binXYZonXY( x_bin_edges, y_bin_edges, xx, yy, zz, 0, 1 );
-
-dim_x = 60;
-dim_y = dim_x+2;
-
-targetSize = [dim_x dim_y];
-
-xxBin = round( (xx-minX)/(maxX-minX)*(targetSize(1)-1) ) +1;
-yyBin = round( (yy-minY)/(maxY-minY)*(targetSize(2)-1) ) +1;
-colormap(gray(128))
-map = accumarray([xxBin(:),yyBin(:)],zz,targetSize,@max,0);
-map = map(1:dim_x,2:dim_y-1);
-map = map-min(min(map));
-x_int = 0:.1:60;
 
 
-map=interp2(map,2);
-imwrite(map, 'hmap_before.png')
 
-surf(map,'EdgeColor','none');
-colorbar
-%min_h = min(min(map))
-%max_h = max(max(map))
-%std_dev = std2(map)
 
-% dy = .2;
-% dx = .2;
-% 
-% 
-% yidx=[min(yy):dy:max(yy)];
-% xidx=[min(xx):dx:max(xx)];
-% ZmapSum=zeros(length(yidx),length(xidx));
-% ZmapIdx=zeros(size(ZmapSum));
-% 
-% [nx,binx] = histc(xx,xidx);
-% [ny,biny] = histc(yy,yidx);
-% %bin==0 means the value is out of range
-% binx=binx+1; biny=biny+1;
-% %binzero=( (binx==0) | (biny==0) );
-% %binx(binzero) = [];
-% %biny(binzero) = [];
-% %xx(binzero) = [];
-% %yy(binzero) = [];
-% %zz(binzero) = [];
-% 
-% %binx and biny give their respective bin locations
-% for i=1:1:length(xx)
-%     ZmapSum(biny(i),binx(i))=max(ZmapSum(biny(i),binx(i)),zz(i));
-%     ZmapIdx(biny(i),binx(i))=ZmapIdx(biny(i),binx(i))+1;
-% end
-% 
-% Zmap=ZmapSum./ZmapIdx;
-% 
-% surf(Zmap)
