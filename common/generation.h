@@ -336,11 +336,11 @@ class ParticleGenerator {
 							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x, r.y * .75, r.z * .75), Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
 						} else if (mixture[mix_type] == MIX_TYPE3) {
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
-							AddCollisionGeometry(body, CONE, ChVector<>(r.x * .75, r.y * .75, r.z * .75), Vector(0, r.x, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x * .75, r.y * .75, r.z * .75), Vector(0, r.x, 0), Quaternion(1, 0, 0, 0));
 						} else if (mixture[mix_type] == MIX_TYPE4) {
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z) * .75, Vector(-r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
 							AddCollisionGeometry(body, SPHERE, ChVector<>(r.x, r.y, r.z) * .75, Vector(r.x / 2.0, 0, 0), Quaternion(1, 0, 0, 0));
-							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x * .15, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
+							AddCollisionGeometry(body, ELLIPSOID, ChVector<>(r.x * .3, r.y, r.z), Vector(0, 0, 0), Quaternion(1, 0, 0, 0));
 						}
 						//mix_type++;
 //						if (mix_type > mixture.size()) {

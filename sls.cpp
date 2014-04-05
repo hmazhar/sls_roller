@@ -32,7 +32,7 @@ real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
 real gravity = -9810;     //acceleration due to gravity
-real timestep = .000005;     //step size
+real timestep = .00001;     //step size
 real time_to_run = 1;     //length of simulation
 real current_time = 0;
 
@@ -72,9 +72,9 @@ void RunTimeStep(T* mSys, const int frame) {
 
 }
 int main(int argc, char* argv[]) {
-	bool visualize = false;
+	bool visualize = true;
 	int config = 0;
-	bool full_mix = false;
+	bool full_mix = true;
 	if (argc > 1) {
 		visualize = atoi(argv[1]);
 		particle_friction = atof(argv[2]);
@@ -132,6 +132,7 @@ int main(int argc, char* argv[]) {
 	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(container_width - container_thickness, container_height, 0), quat);
 	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, -container_length + container_thickness), quat);
 	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, container_length - container_thickness), quat);
+	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_thickness, container_length), Vector(0, container_height*2,0), quat);
 	FinalizeObject(PLATE, (ChSystemParallel *) system_gpu);
 
 	ChSharedPtr<ChMaterialSurface> material_bottom;
@@ -141,6 +142,7 @@ int main(int argc, char* argv[]) {
 	ChSharedBodyPtr BOTTOM = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
 	InitObject(BOTTOM, 100000, ChVector<>(0, 0, 0), quat, material_bottom, true, true, -20, -20);
 	AddCollisionGeometry(BOTTOM, BOX, ChVector<>(container_width, container_thickness, container_length), lpos, quat);
+
 	FinalizeObject(BOTTOM, (ChSystemParallel *) system_gpu);
 
 	ROLLER = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
@@ -159,7 +161,8 @@ int main(int argc, char* argv[]) {
 	int3 num_per_dir = I3(1, 1, 1);
 	//num_per_dir = I3(90, 16, 1);
 
-	num_per_dir = I3(90, 16*particle_layer_thickness/.2032, 540);
+	//num_per_dir = I3(90, 16*particle_layer_thickness/.2032, 540);
+	num_per_dir = I3(1, 16*particle_layer_thickness/.2032, 540);
 	ParticleGenerator < ChSystemParallelDVI > layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
@@ -179,12 +182,13 @@ int main(int argc, char* argv[]) {
 
 	//layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
-	layer_gen.addPerturbedVolumeMixture(R3(0, 1.2, 0), num_per_dir, R3(.1, .1, .1), R3(0));
-	num_per_dir = I3(90, 30, 50);
+	layer_gen.addPerturbedVolumeMixture(R3(0, 1.3, 0), num_per_dir, R3(.1, .1, .1), R3(0));
+	//num_per_dir = I3(90, 30, 50);
+	num_per_dir = I3(1, 15, 100);
 	//num_per_dir = I3(90, 30, 50);
 	//layer_gen.addPerturbedVolume(R3(0, 3.7, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
-	layer_gen.addPerturbedVolumeMixture(R3(0, 3.7, 15), num_per_dir, R3(.1, .1, .1), R3(0));
+	layer_gen.addPerturbedVolumeMixture(R3(0, 3.2, 15), num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
