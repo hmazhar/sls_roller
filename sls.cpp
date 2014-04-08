@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
 	//num_per_dir = I3(90, 16, 1);
 
 	num_per_dir = I3(90, 16*particle_layer_thickness/.2032, 540);
-	//num_per_dir = I3(1, 16*particle_layer_thickness/.2032, 540);
+	//num_per_dir = I3(90, 1, 100);
 	ParticleGenerator < ChSystemParallelDVI > layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
@@ -170,33 +170,35 @@ int main(int argc, char* argv[]) {
 	layer_gen.material->SetFriction(particle_friction);
 	layer_gen.material->SetRollingFriction(rolling_friction);
 	layer_gen.material->SetSpinningFriction(spinning_friction);
-	layer_gen.AddMixtureType(MIX_SPHERE);
+
 	if (full_mix) {
+		layer_gen.AddMixtureType(MIX_SPHERE);
 		layer_gen.AddMixtureType(MIX_TYPE1);
 		layer_gen.AddMixtureType(MIX_TYPE2);
 		layer_gen.AddMixtureType(MIX_TYPE3);
 		layer_gen.AddMixtureType(MIX_TYPE4);
 		layer_gen.AddMixtureType(MIX_ELLIPSOID);
 		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
+	}else{
+		layer_gen.AddMixtureType(MIX_SPHERE);
 	}
 
 	//layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
 
 	layer_gen.addPerturbedVolumeMixture(R3(0, 1.3, 0), num_per_dir, R3(.1, .1, .1), R3(0));
-	num_per_dir = I3(90, 15, 100);
+	//num_per_dir = I3(90, 15, 100);
+	//num_per_dir = I3(90, 15, 50);
 	//num_per_dir = I3(1, 15, 100);
 	//num_per_dir = I3(90, 30, 50);
-	//layer_gen.addPerturbedVolume(R3(0, 3.7, 15), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
-
-	layer_gen.addPerturbedVolumeMixture(R3(0, 3.2, 15), num_per_dir, R3(.1, .1, .1), R3(0));
+	//layer_gen.addPerturbedVolumeMixture(R3(0, 3.2, 15), num_per_dir, R3(.1, .1, .1), R3(0));
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
 	if (visualize) {
 		ChOpenGLManager * window_manager = new ChOpenGLManager();
 		ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-		openGLView.render_camera->camera_pos = Vector(-50, 0, -50);
-		openGLView.render_camera->look_at = Vector(0, 0, 0);
+		openGLView.render_camera->camera_position = glm::vec3(-50, 0, -50);
+		openGLView.render_camera->camera_look_at = glm::vec3(0, 0, 0);
 		openGLView.SetCustomCallback(RunTimeStep);
 		openGLView.StartSpinning(window_manager);
 		window_manager->CallGlutMainLoop();
@@ -219,7 +221,7 @@ int main(int argc, char* argv[]) {
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
 		RunTimeStep(system_gpu, i);
-		int save_every = 1.0 / timestep / 600.0;     //save data every n steps
+		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
 		if (i % save_every == 0) {
 			stringstream ss;
 			cout << "Frame: " << file << endl;
