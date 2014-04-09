@@ -91,8 +91,8 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetIntegrationType(ChSystem::INT_ANITESCU);
 	//=========================================================================================================
 	//system_gpu->SetMaxiter(max_iteration);
+
 	//system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
-	system_gpu->DoThreadTuning(false);
 	//((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iter);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration * 2);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
@@ -107,12 +107,10 @@ int main(int argc, char* argv[]) {
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(40, 200, 100));
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
 	system_gpu->DoThreadTuning(false);
+	system_gpu->SetMinThreads(32);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 
-	//=========================================================================================================
-	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
-	system_gpu->SetStep(timestep);
 	//=========================================================================================================
 	((ChSystemParallel*) system_gpu)->SetAABB(R3(-6, -3, -30), R3(6, 6, 30));
 
