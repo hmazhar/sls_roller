@@ -208,7 +208,7 @@ class ParticleGenerator {
 
 		bool computePerturbedPos(real3 percent_perturbation, int3 num_per_dir, int3 index, real3 origin, real3 & pos) {
 
-			real3 r = R3(max(max(radius.x, radius.y), radius.z)) + R3(std_dev) * num_std_dev*2 * use_normal_dist;
+			real3 r = R3(max(max(radius.x, radius.y), radius.z)) + R3(std_dev) * num_std_dev*2.4 * use_normal_dist;
 
 			real3 a = r * percent_perturbation;
 			real3 d = a + 2 * r;     //compute cell length

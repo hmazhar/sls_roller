@@ -159,8 +159,8 @@ int main(int argc, char* argv[]) {
 	int3 num_per_dir = I3(1, 1, 1);
 	//num_per_dir = I3(90, 16, 1);
 
-	num_per_dir = I3(90, 16*particle_layer_thickness/.2032, 540);
-	//num_per_dir = I3(90, 1, 100);
+	num_per_dir = I3(90, 17*particle_layer_thickness/.2032, 490);
+	//num_per_dir = I3(90, 1, 490);
 	ParticleGenerator < ChSystemParallelDVI > layer_gen(system_gpu);
 	layer_gen.SetDensity(particle_density);
 	layer_gen.SetRadius(R3(particle_radius));
@@ -190,6 +190,11 @@ int main(int argc, char* argv[]) {
 	//num_per_dir = I3(90, 30, 50);
 	//layer_gen.addPerturbedVolumeMixture(R3(0, 3.2, 15), num_per_dir, R3(.1, .1, .1), R3(0));
 
+
+
+	for(int i=0; i<system_gpu->Get_bodylist()->size(); i++){
+		system_gpu->Get_bodylist()->at(i)->SetMaxSpeed(25);
+	}
 	//=========================================================================================================
 	//////Rendering specific stuff:
 	if (visualize) {
