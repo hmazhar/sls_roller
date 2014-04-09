@@ -106,8 +106,8 @@ int main(int argc, char* argv[]) {
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(40, 200, 100));
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
-	//((ChSystemParallelDVI*) system_gpu)->DoThreadTuning(false);
-	((ChSystemParallelDVI*) system_gpu)->SetMinThreads(32);
+	((ChSystemParallelDVI*) system_gpu)->DoThreadTuning(false);
+	//((ChSystemParallelDVI*) system_gpu)->SetMinThreads(32);
 	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
 	system_gpu->SetStep(timestep);
 
