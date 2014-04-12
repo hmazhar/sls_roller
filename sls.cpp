@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
 		if (i % save_every == 0) {
 			stringstream ss;
 			cout << "Frame: " << file << endl;
-			ss << "/dev/shm/"<<data_folder << "/" << file << ".txt";
+			ss << "/dev/shm/"<<roller_velocity << file << ".txt";
 			DumpAllObjectsWithGeometryPovray(system_gpu, ss.str());
 			stringstream tempmove;
 			tempmove<<"mv "<<ss.str()<<" "<<data_folder << "/" << file << ".txt &";
