@@ -8,7 +8,7 @@ ChQuaternion<> quat(1, 0, 0, 0);
 //all dimensions are in millimeters, milligrams
 real plate_height = -5;
 real plate_thickness = .1;
-real plate_radius =5;
+real plate_radius = 5;
 real plate_friction = 1;
 
 real particle_radius = .058 / 2.0;
@@ -35,7 +35,7 @@ int particle_grid_x = 14;
 int particle_grid_z = 14;
 
 int particles_every = 90 * 4;     //add particles every n steps
-int max_iteration = 150;
+int max_iteration = 40;
 real tolerance = 0;
 
 int particle_configuration = 0;
@@ -58,10 +58,10 @@ void RunTimeStep(T* mSys, const int frame) {
 //&& frame * timestep < 5.5 && frame * timestep > .02
 	if (frame % particles_every == 0 && frame * timestep < 1) {
 		layer_gen->addPerturbedVolumeMixture(
-				R3(0, start_height, 0),
-				I3(particle_grid_x, 1, particle_grid_z),
-				R3(.1, .1, .1),
-				R3(particle_initial_vel.x, particle_initial_vel.y, particle_initial_vel.z));
+		R3(0, start_height, 0),
+		I3(particle_grid_x, 1, particle_grid_z),
+		R3(.1, .1, .1),
+		R3(particle_initial_vel.x, particle_initial_vel.y, particle_initial_vel.z));
 	}
 
 }
@@ -83,9 +83,8 @@ int main(int argc, char* argv[]) {
 	}
 	omp_set_num_threads(threads);
 
-
-	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " " << particle_cohesion << " "
-			<< plate_friction << " " << data_folder << " " << endl;
+	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " "
+			<< particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
 	//=========================================================================================================
 	//=========================================================================================================
 	ChSystemParallelDVI * system_gpu = new ChSystemParallelDVI;
@@ -94,13 +93,17 @@ int main(int argc, char* argv[]) {
 	//system_gpu->SetAABB(R3(-2,-5,-2), R3(2,5,2));
 
 	//=========================================================================================================
-	system_gpu->SetParallelThreadNumber(threads);
+	//system_gpu->SetParallelThreadNumber(threads);
 	system_gpu->SetMaxiter(max_iteration);
 	system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
 	//((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iteration);
-	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(150);
-	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(150);
-	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);
+	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration);
+	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
+	if (particle_rolling_friction > 0 || particle_rolling_friction > 0) {
+		((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(max_iteration);
+	} else {
+		((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);
+	}
 	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationBilateral(0);
 	system_gpu->SetTol(tolerance);
 	system_gpu->SetTolSpeeds(tolerance);
@@ -109,7 +112,7 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(20);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(solver);
+	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(APGDRS);
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .06);
 	mcollisionengine->setBinsPerAxis(I3(50, 50, 50));
 	mcollisionengine->setBodyPerBin(100, 50);
@@ -124,9 +127,9 @@ int main(int argc, char* argv[]) {
 
 	ChSharedPtr<ChMaterialSurface> material;
 	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(2-particle_friction);
-	material->SetSpinningFriction(2-particle_spinning_friction);
-	material->SetRollingFriction(2-particle_rolling_friction);
+	material->SetFriction(2 - particle_friction);
+	material->SetSpinningFriction(2 - particle_spinning_friction);
+	material->SetRollingFriction(2 - particle_rolling_friction);
 
 	if (create_particle_plate) {
 
@@ -270,14 +273,14 @@ int main(int argc, char* argv[]) {
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
-//	ChOpenGLManager * window_manager = new ChOpenGLManager();
-//	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-//	openGLView.render_camera->camera_position = glm::vec3(0, -5, -40);
-//	openGLView.render_camera->camera_look_at = glm::vec3(0, -5, 0);
-//	openGLView.render_camera->camera_scale=.4;
-//	openGLView.SetCustomCallback(RunTimeStep);
-//	openGLView.StartSpinning(window_manager);
-//	window_manager->CallGlutMainLoop();
+	ChOpenGLManager * window_manager = new ChOpenGLManager();
+	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
+	openGLView.render_camera->camera_position = glm::vec3(0, -5, -40);
+	openGLView.render_camera->camera_look_at = glm::vec3(0, -5, 0);
+	openGLView.render_camera->camera_scale=.4;
+	openGLView.SetCustomCallback(RunTimeStep);
+	openGLView.StartSpinning(window_manager);
+	window_manager->CallGlutMainLoop();
 	//=========================================================================================================
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
@@ -289,9 +292,9 @@ int main(int argc, char* argv[]) {
 		cout << "step " << i;
 		cout << " Residual: " << ((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->GetResidual();
 		cout << " ITER: " << ((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations();
-		cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << system_gpu->GetNbodies() << " contacts= " << system_gpu->GetNcontacts() << " step time=" << system_gpu->GetTimerStep()
-				<< " lcp time=" << system_gpu->GetTimerLcp() << " CDbroad time=" << system_gpu->GetTimerCollisionBroad() << " CDnarrow time=" << system_gpu->GetTimerCollisionNarrow() << " Iterations="
-				<< ((ChLcpSolverParallel*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
+		cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << system_gpu->GetNbodies() << " contacts= " << system_gpu->GetNcontacts() << " step time="
+				<< system_gpu->GetTimerStep() << " lcp time=" << system_gpu->GetTimerLcp() << " CDbroad time=" << system_gpu->GetTimerCollisionBroad() << " CDnarrow time="
+				<< system_gpu->GetTimerCollisionNarrow() << " Iterations=" << ((ChLcpSolverParallel*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << "\n";
 		//TimingFile(system_gpu, timing_file_name, current_time);
 		system_gpu->DoStepDynamics(timestep);
 		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
