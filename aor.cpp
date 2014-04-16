@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 		//all_three_kinds = atoi(argv[7]);
 		//particle_configuration = atoi(argv[8]);
 	}
-	omp_set_num_threads(threads);
+	//omp_set_num_threads(threads);
 
 	cout << particle_density << " " << particle_radius << " " << particle_friction << " " << particle_rolling_friction << " " << particle_spinning_friction << " "
 			<< particle_cohesion << " " << plate_friction << " " << data_folder << " " << endl;
@@ -273,14 +273,14 @@ int main(int argc, char* argv[]) {
 
 	//=========================================================================================================
 	//////Rendering specific stuff:
-	ChOpenGLManager * window_manager = new ChOpenGLManager();
-	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-	openGLView.render_camera->camera_position = glm::vec3(0, -5, -40);
-	openGLView.render_camera->camera_look_at = glm::vec3(0, -5, 0);
-	openGLView.render_camera->camera_scale=.4;
-	openGLView.SetCustomCallback(RunTimeStep);
-	openGLView.StartSpinning(window_manager);
-	window_manager->CallGlutMainLoop();
+//	ChOpenGLManager * window_manager = new ChOpenGLManager();
+//	ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
+//	openGLView.render_camera->camera_position = glm::vec3(0, -5, -40);
+//	openGLView.render_camera->camera_look_at = glm::vec3(0, -5, 0);
+//	openGLView.render_camera->camera_scale=.4;
+//	openGLView.SetCustomCallback(RunTimeStep);
+//	openGLView.StartSpinning(window_manager);
+//	window_manager->CallGlutMainLoop();
 	//=========================================================================================================
 	stringstream ss_m;
 	ss_m << data_folder << "/" << "timing.txt";
