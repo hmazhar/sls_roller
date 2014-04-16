@@ -26,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .00002;
+real timestep = .00001;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -47,7 +47,6 @@ bool create_particle_plate = 1;
 real particle_plate_dim = 6;
 real plate_particle_radius = .075;
 bool all_three_kinds = true;
-GPUSOLVERTYPE solver = ACCELERATED_PROJECTED_GRADIENT_DESCENT;
 
 string data_folder = "data";
 real start_height = -1.5;
@@ -88,7 +87,6 @@ int main(int argc, char* argv[]) {
 	//=========================================================================================================
 	//=========================================================================================================
 	ChSystemParallelDVI * system_gpu = new ChSystemParallelDVI;
-	ChCollisionSystemParallel *mcollisionengine = new ChCollisionSystemParallel();
 	system_gpu->SetIntegrationType(ChSystem::INT_ANITESCU);
 	//system_gpu->SetAABB(R3(-2,-5,-2), R3(2,5,2));
 
@@ -109,13 +107,11 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(tolerance);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(20);
+	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(10);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(APGDRS);
 	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .06);
-	mcollisionengine->setBinsPerAxis(I3(50, 50, 50));
-	mcollisionengine->setBodyPerBin(100, 50);
 	((ChSystemParallel*) system_gpu)->SetAABB(R3(-6, -6, -6), R3(6, 4, 6));
 
 	//=========================================================================================================
