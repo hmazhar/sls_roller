@@ -14,9 +14,9 @@ real plate_friction = 1;
 real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_density = .93;
-real particle_friction = 1;
-real particle_rolling_friction = 1;
-real particle_spinning_friction = 1;
+real particle_friction = .5;
+real particle_rolling_friction = .1;
+real particle_spinning_friction = .1;
 real particle_cohesion = 0;
 Vector particle_initial_vel = Vector(0, 0, 0);     //initial velocity
 
@@ -26,7 +26,7 @@ real container_height = 1.0;
 real wscale = 1;
 
 real gravity = -9810;
-real timestep = .00001;
+real timestep = .00002;
 real time_to_run = 6;
 real current_time = 0;
 int num_steps = time_to_run / timestep;
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration);
 	((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration);
 	if (particle_rolling_friction > 0 || particle_rolling_friction > 0) {
-		((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(max_iteration);
+		((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(max_iteration*2);
 	} else {
 		((ChLcpSolverParallelDVI*) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);
 	}
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
 	system_gpu->SetTolSpeeds(tolerance);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(0);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(10);
+	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(20);
 	//setSolverGPU(solver_string, system_gpu);     //reads a string and sets the solver
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetWarmStart(false);
 	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(APGDRS);
