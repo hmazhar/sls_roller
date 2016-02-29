@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.max_iteration_normal = max_iteration;
     system->GetSettings()->solver.max_iteration_sliding = max_iteration;
     system->GetSettings()->solver.max_iteration_spinning = max_iteration;
-    system->GetSettings()->solver.max_iteration_bilateral = 1000;  // make 1000, should be about 220
+    system->GetSettings()->solver.max_iteration_bilateral = 0;  // make 1000, should be about 220
     system->GetSettings()->solver.compute_N = false;
     system->GetSettings()->solver.alpha = 0;
     system->GetSettings()->solver.cache_step_length = true;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
     system->SetLoggingLevel(LOG_TRACE);
 
     system->GetSettings()->collision.collision_envelope = particle_radius * .05;
-    system->GetSettings()->collision.bins_per_axis = int3(40, 200, 100);
+    system->GetSettings()->collision.bins_per_axis = int3(40, 200, 200);
     system->GetSettings()->collision.narrowphase_algorithm = NARROWPHASE_HYBRID_MPR;
     system->GetSettings()->collision.use_two_level = false;
     system->GetSettings()->collision.fixed_bins = true;
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
     auto material_plate = std::make_shared<ChMaterialSurface>();
     material_plate->SetFriction(0);
     std::shared_ptr<ChBody> PLATE = std::make_shared<ChBody>(new ChCollisionModelParallel);
-    utils::InitializeObject(PLATE, 100000, material_plate, ChVector<>(0, 0, 0));
+    utils::InitializeObject(PLATE, 100000, material_plate, ChVector<>(0, 0, 0), QUNIT, true, true, 2, 6);
 
     utils::AddBoxGeometry(PLATE.get(), Vector(container_thickness, container_height, container_length),
                           Vector(-container_width + container_thickness, container_height, 0));
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     auto material_bottom = std::make_shared<ChMaterialSurface>();
     material_bottom->SetFriction(floor_friction);
     std::shared_ptr<ChBody> BOTTOM = std::make_shared<ChBody>(new ChCollisionModelParallel);
-    utils::InitializeObject(BOTTOM, 100000, material_bottom, ChVector<>(0, 0, 0));
+    utils::InitializeObject(BOTTOM, 100000, material_bottom, ChVector<>(0, 0, 0), QUNIT, true, true, 2, 6);
     utils::AddBoxGeometry(BOTTOM.get(), ChVector<>(container_width, container_thickness, container_length));
     FinalizeObject(BOTTOM, (ChSystemParallel*)system);
 
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
     utils::InitializeObject(ROLLER, 100000, material_roller,
                             ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness,
                                        container_length + roller_radius / 3.0),
-                            roller_quat);
+                            roller_quat, true, false, 6, 6);
 
     utils::AddCylinderGeometry(ROLLER.get(), roller_radius, roller_length * 2);
     FinalizeObject(ROLLER, (ChSystemParallel*)system);
@@ -175,8 +175,8 @@ int main(int argc, char* argv[]) {
                             particle_radius + particle_std_dev);
     m1->setDefaultMaterialDVI(material_granular);
 
-    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
-                          ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
+    //    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
+    //                          ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
 
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
     gl_window.Initialize(1280, 720, "Bucky", system);
