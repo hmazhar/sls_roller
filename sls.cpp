@@ -1,23 +1,44 @@
-#include "common/common.h"
-#include "common/generation.h"
-#include "common/parser.h"
-#include "common/input_output.h"
-ChVector<> lpos(0, 0, 0);
-ChQuaternion<> quat(1, 0, 0, 0);
+#include <stdio.h>
+#include <vector>
+#include <cmath>
+#include <string>
 
-//all dimensions are in millimeters, milligrams
-real container_width = 5;     //width of area with particles
-real container_length = 25;     //length of area that roller will go over		1194mm maximum
-real container_thickness = .25;     //thickness of container walls
-real container_height = 2;     //height of the outer walls
+#include "core/ChFileutils.h"
+#include "core/ChStream.h"
+#include "collision/ChCConvexDecomposition.h"
+
+#include "chrono_parallel/physics/ChSystemParallel.h"
+#include "chrono_parallel/lcp/ChLcpSystemDescriptorParallel.h"
+#include "chrono_parallel/collision/ChNarrowphaseRUtils.h"
+#include "chrono_parallel/physics/Ch3DOFContainer.h"
+
+#include "chrono/utils/ChUtilsGeometry.h"
+#include "chrono/utils/ChUtilsCreators.h"
+#include "chrono/utils/ChUtilsInputOutput.h"
+#include "chrono/utils/ChUtilsGenerators.h"
+
+#include "chrono_opengl/ChOpenGLWindow.h"
+
+using namespace chrono;
+using namespace chrono::collision;
+using namespace chrono::geometry;
+using namespace chrono::utils;
+using std::cout;
+using std::endl;
+
+// all dimensions are in millimeters, milligrams
+real container_width = 5;        // width of area with particles
+real container_length = 25;      // length of area that roller will go over		1194mm maximum
+real container_thickness = .25;  // thickness of container walls
+real container_height = 2;       // height of the outer walls
 real container_friction = 0;
 real floor_friction = .2;
 real spacer_width = 1;
 real spacer_height = 1;
 
-real roller_overlap = 1;     //amount that roller goes over the container area
-real roller_length = 2.5 - .25;     //length of the roller
-real roller_radius = 76.2 / 2.0;     //radius of roller
+real roller_overlap = 1;          // amount that roller goes over the container area
+real roller_length = 2.5 - .25;   // length of the roller
+real roller_radius = 76.2 / 2.0;  // radius of roller
 real roller_omega = 0;
 real roller_velocity = -127;
 real roller_mass = 1;
@@ -27,226 +48,148 @@ real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_mass = .05;
 real particle_density = 0.93;
-real particle_layer_thickness = particle_radius * 12;
+real particle_layer_thickness = particle_radius * 16;
 real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
-real gravity = -9810;     //acceleration due to gravity
-real timestep = .00001;     //step size
-real time_to_run = 1;     //length of simulation
+real gravity = -9810;    // acceleration due to gravity
+real timestep = .00001;  // step size
+real time_to_run = 1;    // length of simulation
 real current_time = 0;
 
 int num_steps = time_to_run / timestep;
 int max_iteration = 20;
 int tolerance = 1e-8;
 
-string data_folder = "data/sls";
-ChSharedBodyPtr ROLLER;
+std::string data_folder = "data/sls";
+std::shared_ptr<ChBody> ROLLER;
 real ang = 0;
 
-template<class T>
+template <class T>
 void RunTimeStep(T* mSys, const int frame) {
-	ChVector<> roller_pos = ROLLER->GetPos();
+    ChVector<> roller_pos = ROLLER->GetPos();
 
-	ROLLER->SetPos(ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, roller_pos.z + roller_velocity * timestep));
-	ROLLER->SetPos_dt(ChVector<>(0, 0, roller_velocity));
-	roller_omega = roller_velocity / roller_radius;
-	ang += roller_omega * timestep;
-	if (ang >= 2 * CH_C_PI) {
-		ang = 0;
-	}
+    ROLLER->SetPos(ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness,
+                              roller_pos.z + roller_velocity * timestep));
+    ROLLER->SetPos_dt(ChVector<>(0, 0, roller_velocity));
+    roller_omega = roller_velocity / roller_radius;
+    ang += roller_omega * timestep;
+    if (ang >= 2 * CH_C_PI) {
+        ang = 0;
+    }
 
-	Quaternion q1;
-	q1.Q_from_AngY(ang);
-	Quaternion q2;
-	q1 = Q_from_AngX(-ang);
+    Quaternion q1;
+    q1.Q_from_AngY(ang);
+    Quaternion q2;
+    q1 = Q_from_AngX(-ang);
 
-	ChQuaternion<> roller_quat;
-	roller_quat.Q_from_AngAxis(PI / 2.0, ChVector<>(0, 0, 1));
+    ChQuaternion<> roller_quat;
+    roller_quat.Q_from_AngAxis(CH_C_PI / 2.0, ChVector<>(0, 0, 1));
 
-	ROLLER->SetRot(q1 % roller_quat);
-	ROLLER->SetWvel_loc(Vector(0, roller_omega, 0));
+    ROLLER->SetRot(q1 % roller_quat);
+    ROLLER->SetWvel_loc(Vector(0, roller_omega, 0));
 
-	cout << "step " << frame;
-			cout << " Residual: " << ((ChLcpSolverParallel *) (mSys->GetLcpSolverSpeed()))->GetResidual();
-			cout << " ITER: " << ((ChLcpSolverParallel *) (mSys->GetLcpSolverSpeed()))->GetTotalIterations();
-			cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << mSys->GetNbodies() << " contacts= " << mSys->GetNcontacts() << " step time="
-					<< mSys->GetTimerStep() << " lcp time=" << mSys->GetTimerLcp() << " CDbroad time=" << mSys->GetTimerCollisionBroad() << " CDnarrow time="
-					<< mSys->GetTimerCollisionNarrow() << " Iterations=" << ((ChLcpSolverParallel*) (mSys->GetLcpSolverSpeed()))->GetTotalIterations() << " "
-					<< ROLLER->GetPos().z << "\n";
-
+    cout << "step " << frame << " " << ROLLER->GetPos().z << "\n";
 }
+
 int main(int argc, char* argv[]) {
-	bool visualize = true;
-	int config = 0;
-	bool full_mix = true;
-	if (argc > 1) {
-		visualize = atoi(argv[1]);
-		particle_friction = atof(argv[2]);
-		rolling_friction = atof(argv[3]);
-		spinning_friction = atof(argv[4]);
-		roller_velocity = -atof(argv[5]);
-		particle_layer_thickness = atof(argv[6]);
-		full_mix = atoi(argv[7]);
-		data_folder = argv[8];
-	}
-	//cout << "Mass, Radius, Friction_Sphere, Friction_Plate, Data Folder, create_particle_plate all_three_kinds, particle configuration" << endl;
-	//=========================================================================================================
-	ChSystemParallelDVI * system_gpu = new ChSystemParallelDVI;
-	system_gpu->SetIntegrationType(ChSystem::INT_ANITESCU);
-	//=========================================================================================================
-	//system_gpu->SetMaxiter(max_iteration);
+    ChSystemParallelDVI* system = new ChSystemParallelDVI;
+    system->Set_G_acc(ChVector<>(0, gravity, 0));
+    system->SetIntegrationType(ChSystem::INT_ANITESCU);
 
-	//system_gpu->SetIterLCPmaxItersSpeed(max_iteration);
-	//((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIteration(max_iter);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationNormal(max_iteration);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSliding(max_iteration*2);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetMaxIterationSpinning(0);
-	system_gpu->SetTol(tolerance);
-	system_gpu->SetTolSpeeds(tolerance);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetTolerance(tolerance);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetCompliance(tolerance);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetContactRecoverySpeed(180);
-	((ChLcpSolverParallelDVI *) (system_gpu->GetLcpSolverSpeed()))->SetSolverType(APGDRS);
-	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->SetCollisionEnvelope(particle_radius * .05);
-	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBinsPerAxis(I3(40, 200, 100));
-	((ChCollisionSystemParallel *) (system_gpu->GetCollisionSystem()))->setBodyPerBin(100, 50);
-	((ChSystemParallelDVI*) system_gpu)->DoThreadTuning(true);
-	((ChSystemParallelDVI*) system_gpu)->SetMinThreads(32);
-	system_gpu->Set_G_acc(ChVector<>(0, gravity, 0));
-	system_gpu->SetStep(timestep);
+    system->GetSettings()->min_threads = 8;
 
-	//=========================================================================================================
-	((ChSystemParallel*) system_gpu)->SetAABB(R3(-6, -3, -30), R3(6, 6, 30));
+    system->GetSettings()->solver.tolerance = tolerance;
+    system->GetSettings()->solver.solver_mode = SPINNING;
+    system->GetSettings()->solver.max_iteration_normal = max_iteration;
+    system->GetSettings()->solver.max_iteration_sliding = max_iteration;
+    system->GetSettings()->solver.max_iteration_spinning = max_iteration;
+    system->GetSettings()->solver.max_iteration_bilateral = 1000;  // make 1000, should be about 220
+    system->GetSettings()->solver.compute_N = false;
+    system->GetSettings()->solver.alpha = 0;
+    system->GetSettings()->solver.cache_step_length = true;
+    system->GetSettings()->solver.use_full_inertia_tensor = false;
+    system->GetSettings()->solver.contact_recovery_speed = 180;
+    system->GetSettings()->solver.bilateral_clamp_speed = 1e8;
+    system->ChangeSolverType(BB);
+    system->SetLoggingLevel(LOG_INFO);
+    system->SetLoggingLevel(LOG_TRACE);
 
-	ChSharedBodyPtr PLATE = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
+    system->GetSettings()->collision.collision_envelope = particle_radius * .05;
+    system->GetSettings()->collision.bins_per_axis = int3(40, 200, 100);
+    system->GetSettings()->collision.narrowphase_algorithm = NARROWPHASE_HYBRID_MPR;
+    system->GetSettings()->collision.use_two_level = false;
+    system->GetSettings()->collision.fixed_bins = true;
 
-	ChSharedPtr<ChMaterialSurface> material_plate;
-	material_plate = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material_plate->SetFriction(0);
+    auto material_plate = std::make_shared<ChMaterialSurface>();
+    material_plate->SetFriction(0);
+    std::shared_ptr<ChBody> PLATE = std::make_shared<ChBody>(new ChCollisionModelParallel);
+    utils::InitializeObject(PLATE, 100000, material_plate, ChVector<>(0, 0, 0));
 
-	InitObject(PLATE, 100000, ChVector<>(0, 0, 0), quat, material_plate, true, true, -20, -20);
+    utils::AddBoxGeometry(PLATE.get(), Vector(container_thickness, container_height, container_length),
+                          Vector(-container_width + container_thickness, container_height, 0));
+    utils::AddBoxGeometry(PLATE.get(), Vector(container_thickness, container_height, container_length),
+                          Vector(container_width - container_thickness, container_height, 0));
+    utils::AddBoxGeometry(PLATE.get(), Vector(container_width, container_height, container_thickness),
+                          Vector(0, container_height, -container_length + container_thickness));
+    utils::AddBoxGeometry(PLATE.get(), Vector(container_width, container_height, container_thickness),
+                          Vector(0, container_height, container_length - container_thickness));
+    utils::AddBoxGeometry(PLATE.get(), Vector(container_width, container_thickness, container_length),
+                          Vector(0, container_height * 2, 0));
 
-	ChSharedPtr<ChMaterialSurface> material;
-	material = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material->SetFriction(container_friction);
+    FinalizeObject(PLATE, (ChSystemParallel*)system);
 
-	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(-container_width + container_thickness, container_height, 0), quat);
-	AddCollisionGeometry(PLATE, BOX, Vector(container_thickness, container_height, container_length), Vector(container_width - container_thickness, container_height, 0), quat);
-	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, -container_length + container_thickness), quat);
-	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_height, container_thickness), Vector(0, container_height, container_length - container_thickness), quat);
-	AddCollisionGeometry(PLATE, BOX, Vector(container_width, container_thickness, container_length), Vector(0, container_height*2,0), quat);
-	FinalizeObject(PLATE, (ChSystemParallel *) system_gpu);
+    auto material_bottom = std::make_shared<ChMaterialSurface>();
+    material_bottom->SetFriction(floor_friction);
+    std::shared_ptr<ChBody> BOTTOM = std::make_shared<ChBody>(new ChCollisionModelParallel);
+    utils::InitializeObject(BOTTOM, 100000, material_bottom, ChVector<>(0, 0, 0));
+    utils::AddBoxGeometry(BOTTOM.get(), ChVector<>(container_width, container_thickness, container_length));
+    FinalizeObject(BOTTOM, (ChSystemParallel*)system);
 
-	ChSharedPtr<ChMaterialSurface> material_bottom;
-	material_bottom = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material_bottom->SetFriction(floor_friction);
+    ROLLER = std::make_shared<ChBody>(new ChCollisionModelParallel);
+    ChQuaternion<> roller_quat;
+    roller_quat.Q_from_AngAxis(CH_C_PI / 2.0, ChVector<>(0, 0, 1));
 
-	ChSharedBodyPtr BOTTOM = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-	InitObject(BOTTOM, 100000, ChVector<>(0, 0, 0), quat, material_bottom, true, true, -20, -20);
-	AddCollisionGeometry(BOTTOM, BOX, ChVector<>(container_width, container_thickness, container_length), lpos, quat);
+    auto material_roller = std::make_shared<ChMaterialSurface>();
+    material_roller->SetFriction(roller_friction);
 
-	FinalizeObject(BOTTOM, (ChSystemParallel *) system_gpu);
+    utils::InitializeObject(ROLLER, 100000, material_roller,
+                            ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness,
+                                       container_length + roller_radius / 3.0),
+                            roller_quat);
 
-	ROLLER = ChSharedBodyPtr(new ChBody(new ChCollisionModelParallel));
-	ChQuaternion<> roller_quat;
-	roller_quat.Q_from_AngAxis(PI / 2.0, ChVector<>(0, 0, 1));
+    utils::AddCylinderGeometry(ROLLER.get(), roller_radius, roller_length * 2);
+    FinalizeObject(ROLLER, (ChSystemParallel*)system);
 
-	ChSharedPtr<ChMaterialSurface> material_roller;
-	material_roller = ChSharedPtr<ChMaterialSurface>(new ChMaterialSurface);
-	material_roller->SetFriction(roller_friction);
+    auto material_granular = std::make_shared<ChMaterialSurface>();
+    material_granular->SetFriction(particle_friction);
+    material_granular->SetRollingFriction(rolling_friction);
+    material_granular->SetSpinningFriction(spinning_friction);
 
-	InitObject(ROLLER, 1000, ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, container_length + roller_radius / 3.0), roller_quat, material_roller,
-			true, false, -20, -20);
-	AddCollisionGeometry(ROLLER, CYLINDER, ChVector<>(roller_radius, roller_length * 2, roller_radius), lpos, quat);
-	FinalizeObject(ROLLER, (ChSystemParallel *) system_gpu);
-	//68
-	int3 num_per_dir = I3(1, 1, 1);
-	//num_per_dir = I3(90, 16, 1);
+    utils::Generator* gen = new utils::Generator(system);
 
-	num_per_dir = I3(90, 17*particle_layer_thickness/.2032, 490);
-	//num_per_dir = I3(90, 17*particle_layer_thickness/.2032, 2);
-	ParticleGenerator < ChSystemParallelDVI > layer_gen(system_gpu);
-	layer_gen.SetDensity(particle_density);
-	layer_gen.SetRadius(R3(particle_radius));
-	layer_gen.SetNormalDistribution(particle_radius, particle_std_dev);
-	layer_gen.material->SetFriction(particle_friction);
-	layer_gen.material->SetRollingFriction(rolling_friction);
-	layer_gen.material->SetSpinningFriction(spinning_friction);
+    std::shared_ptr<MixtureIngredient>& m1 = gen->AddMixtureIngredient(utils::SPHERE, 1);
+    m1->setDefaultSize(particle_radius);
+    m1->setDefaultDensity(particle_density);
+    m1->setDistributionSize(particle_radius, particle_std_dev, particle_radius - particle_std_dev,
+                            particle_radius + particle_std_dev);
+    m1->setDefaultMaterialDVI(material_granular);
 
-	if (full_mix) {
-		layer_gen.AddMixtureType(MIX_SPHERE);
-		layer_gen.AddMixtureType(MIX_TYPE1);
-		layer_gen.AddMixtureType(MIX_TYPE2);
-		layer_gen.AddMixtureType(MIX_TYPE3);
-		layer_gen.AddMixtureType(MIX_TYPE4);
-		layer_gen.AddMixtureType(MIX_ELLIPSOID);
-		layer_gen.AddMixtureType(MIX_DOUBLESPHERE);
-	}else{
-		layer_gen.AddMixtureType(MIX_SPHERE);
-	}
+    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
+                          ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
 
-	//layer_gen.addPerturbedVolume(R3(0, 1.2, 0), SPHERE, num_per_dir, R3(.1, .1, .1), R3(0));
-
-	layer_gen.addPerturbedVolumeMixture(R3(0, 1.8, 0), num_per_dir, R3(.1, .1, .1), R3(0));
-	//num_per_dir = I3(90, 15, 100);
-	//num_per_dir = I3(90, 15, 50);
-	//num_per_dir = I3(1, 15, 100);
-	//num_per_dir = I3(90, 30, 50);
-	//layer_gen.addPerturbedVolumeMixture(R3(0, 3.2, 15), num_per_dir, R3(.1, .1, .1), R3(0));
-
-
-
-	for(int i=0; i<system_gpu->Get_bodylist()->size(); i++){
-		system_gpu->Get_bodylist()->at(i)->SetMaxSpeed(25);
-	}
-	//=========================================================================================================
-	//////Rendering specific stuff:
-	if (visualize) {
-		ChOpenGLManager * window_manager = new ChOpenGLManager();
-		ChOpenGL openGLView(window_manager, system_gpu, 800, 600, 0, 0, "Test_Solvers");
-		openGLView.render_camera->camera_position = glm::vec3(-50, 0, -50);
-		openGLView.render_camera->camera_look_at = glm::vec3(0, 0, 0);
-		openGLView.SetCustomCallback(RunTimeStep);
-		openGLView.StartSpinning(window_manager);
-		window_manager->CallGlutMainLoop();
-	}
-	//=========================================================================================================
-	stringstream ss_m;
-	ss_m << data_folder << "/" << "timing.txt";
-	string timing_file_name = ss_m.str();
-	ofstream ofile(timing_file_name.c_str());
-	ofile.close();
-	int file = 0;
-	for (int i = 0; i < num_steps; i++) {
-		cout << "step " << i;
-		cout << " Residual: " << ((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->GetResidual();
-		cout << " ITER: " << ((ChLcpSolverParallel *) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations();
-		cout << " OUTPUT STEP: Time= " << current_time << " bodies= " << system_gpu->GetNbodies() << " contacts= " << system_gpu->GetNcontacts() << " step time="
-				<< system_gpu->GetTimerStep() << " lcp time=" << system_gpu->GetTimerLcp() << " CDbroad time=" << system_gpu->GetTimerCollisionBroad() << " CDnarrow time="
-				<< system_gpu->GetTimerCollisionNarrow() << " Iterations=" << ((ChLcpSolverParallel*) (system_gpu->GetLcpSolverSpeed()))->GetTotalIterations() << " "
-				<< ROLLER->GetPos().z << "\n";
-		//TimingFile(system_gpu, timing_file_name, current_time);
-		system_gpu->DoStepDynamics(timestep);
-		RunTimeStep(system_gpu, i);
-		int save_every = 1.0 / timestep / 6000.0;     //save data every n steps
-		if (i % save_every == 0) {
-			stringstream ss;
-			cout << "Frame: " << file << endl;
-			ss << "/dev/shm/"<<roller_velocity << file << ".txt";
-			DumpAllObjectsWithGeometryPovray(system_gpu, ss.str());
-			stringstream tempmove;
-			tempmove<<"mv "<<ss.str()<<" "<<data_folder << "/" << file << ".txt &";
-			system(tempmove.str().c_str());
-			//output.ExportData(ss.str());
-			file++;
-		}
-		if (ROLLER->GetPos().z < -15) {
-			break;
-		}
-		current_time += timestep;
-	}
-	stringstream ss;
-	return 0;
+    opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
+    gl_window.Initialize(1280, 720, "Bucky", system);
+    gl_window.SetCamera(ChVector<>(0, 0, -10), ChVector<>(0, 0, 0), ChVector<>(0, 1, 0), 0.1);
+    gl_window.Pause();
+    for (int i = 0; i < num_steps; i++) {
+        if (gl_window.Active()) {
+            if (gl_window.DoStepDynamics(timestep)) {
+                // TimingOutput(system);
+                // RunTimeStep(system, i);
+            }
+            gl_window.Render();
+        }
+    }
+    exit(0);
 }
-
