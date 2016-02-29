@@ -3,26 +3,8 @@
 #include <cmath>
 #include <string>
 
-#include "core/ChFileutils.h"
-#include "core/ChStream.h"
-#include "collision/ChCConvexDecomposition.h"
+#include "common/input_output.h"
 
-#include "chrono_parallel/physics/ChSystemParallel.h"
-#include "chrono_parallel/lcp/ChLcpSystemDescriptorParallel.h"
-#include "chrono_parallel/collision/ChNarrowphaseRUtils.h"
-#include "chrono_parallel/physics/Ch3DOFContainer.h"
-
-#include "chrono/utils/ChUtilsGeometry.h"
-#include "chrono/utils/ChUtilsCreators.h"
-#include "chrono/utils/ChUtilsInputOutput.h"
-#include "chrono/utils/ChUtilsGenerators.h"
-
-#include "chrono_opengl/ChOpenGLWindow.h"
-
-using namespace chrono;
-using namespace chrono::collision;
-using namespace chrono::geometry;
-using namespace chrono::utils;
 using std::cout;
 using std::endl;
 
@@ -54,14 +36,16 @@ real rolling_friction = .1;
 real spinning_friction = .1;
 real gravity = -9810;    // acceleration due to gravity
 real timestep = .00001;  // step size
-real time_to_run = 1;    // length of simulation
+real time_end = 1;       // length of simulation
 real current_time = 0;
+int out_fps = 6000;
+int out_steps = std::ceil((1.0 / timestep) / out_fps);
 
-int num_steps = time_to_run / timestep;
+int num_steps = time_end / timestep;
 int max_iteration = 20;
 int tolerance = 1e-8;
 
-std::string data_folder = "data/sls";
+std::string data_output_path = "data_sls";
 std::shared_ptr<ChBody> ROLLER;
 real ang = 0;
 
@@ -93,6 +77,14 @@ void RunTimeStep(T* mSys, const int frame) {
 }
 
 int main(int argc, char* argv[]) {
+    real roller_start = container_length + roller_radius / 3.0;
+
+    time_end = (roller_start) / Abs(roller_velocity);
+
+    printf("Time to run: %f %f\n", roller_start, time_end);
+
+    num_steps = time_end / timestep;
+
     ChSystemParallelDVI* system = new ChSystemParallelDVI;
     system->Set_G_acc(ChVector<>(0, gravity, 0));
     system->SetIntegrationType(ChSystem::INT_ANITESCU);
@@ -116,7 +108,7 @@ int main(int argc, char* argv[]) {
     system->SetLoggingLevel(LOG_TRACE);
 
     system->GetSettings()->collision.collision_envelope = particle_radius * .05;
-    system->GetSettings()->collision.bins_per_axis = int3(40, 200, 200);
+    system->GetSettings()->collision.bins_per_axis = int3(40, 300, 400);
     system->GetSettings()->collision.narrowphase_algorithm = NARROWPHASE_HYBRID_MPR;
     system->GetSettings()->collision.use_two_level = false;
     system->GetSettings()->collision.fixed_bins = true;
@@ -154,8 +146,7 @@ int main(int argc, char* argv[]) {
     material_roller->SetFriction(roller_friction);
 
     utils::InitializeObject(ROLLER, 100000, material_roller,
-                            ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness,
-                                       container_length + roller_radius / 3.0),
+                            ChVector<>(0, roller_radius + particle_layer_thickness + container_thickness, roller_start),
                             roller_quat, true, false, 6, 6);
 
     utils::AddCylinderGeometry(ROLLER.get(), roller_radius, roller_length * 2);
@@ -175,21 +166,50 @@ int main(int argc, char* argv[]) {
                             particle_radius + particle_std_dev);
     m1->setDefaultMaterialDVI(material_granular);
 
-    //    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
-    //                          ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
+    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
+                          ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
 
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
     gl_window.Initialize(1280, 720, "Bucky", system);
     gl_window.SetCamera(ChVector<>(0, 0, -10), ChVector<>(0, 0, 0), ChVector<>(0, 1, 0), 0.1);
     gl_window.Pause();
-    for (int i = 0; i < num_steps; i++) {
+    int frame = 0;
+#if 0
+    while (frame < num_steps) {
         if (gl_window.Active()) {
             if (gl_window.DoStepDynamics(timestep)) {
                 // TimingOutput(system);
-                // RunTimeStep(system, i);
+                RunTimeStep(system, frame);
+                frame++;
             }
             gl_window.Render();
+        } else {
+            exit(0);
         }
     }
-    exit(0);
+#else
+
+    double time = 0, exec_time = 0;
+    int sim_frame = 0, out_frame = 0, next_out_frame = 0;
+
+    while (time < time_end) {
+        system->DoStepDynamics(timestep);
+        if (sim_frame == next_out_frame) {
+            std::cout << "write: " << out_frame << std::endl;
+            DumpAllObjectsWithGeometryPovray(system, data_output_path + "data_" + std::to_string(out_frame) + ".dat",
+                                             true);
+            out_frame++;
+            next_out_frame += out_steps;
+        }
+        RunTimeStep(system, frame);
+
+        // Update counters.
+        time += timestep;
+        sim_frame++;
+        exec_time += system->GetTimerStep();
+    }
+    cout << "==================================" << endl;
+    cout << "Simulation time:   " << exec_time << endl;
+
+#endif
 }
