@@ -169,12 +169,14 @@ int main(int argc, char* argv[]) {
     gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
                           ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
 
+
+#if 0
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
     gl_window.Initialize(1280, 720, "Bucky", system);
     gl_window.SetCamera(ChVector<>(0, 0, -10), ChVector<>(0, 0, 0), ChVector<>(0, 1, 0), 0.1);
     gl_window.Pause();
     int frame = 0;
-#if 0
+
     while (frame < num_steps) {
         if (gl_window.Active()) {
             if (gl_window.DoStepDynamics(timestep)) {
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]) {
             out_frame++;
             next_out_frame += out_steps;
         }
-        RunTimeStep(system, frame);
+        RunTimeStep(system, sim_frame);
 
         // Update counters.
         time += timestep;
