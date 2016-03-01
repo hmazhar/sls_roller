@@ -36,7 +36,7 @@ real rolling_friction = .1;
 real spinning_friction = .1;
 real gravity = -9810;  // acceleration due to gravity
 // step size which will not allow interpenetration more than 1/6 of smallest radius
-real timestep = ((particle_radius - particle_std_dev) / 3.0) / roller_velocity;
+real timestep = Abs(((particle_radius - particle_std_dev) / 3.0) / roller_velocity);
 // real timestep = .00005;  // step size
 real time_end = 1;  // length of simulation
 real current_time = 0;
