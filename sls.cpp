@@ -34,15 +34,17 @@ real particle_layer_thickness = particle_radius * 16;
 real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
-real gravity = -9810;    // acceleration due to gravity
-real timestep = .00001;  // step size
-real time_end = 1;       // length of simulation
+real gravity = -9810;  // acceleration due to gravity
+// step size which will not allow interpenetration more than 1/6 of smallest radius
+real timestep = ((particle_radius - particle_std_dev) / 3.0) / roller_velocity;
+// real timestep = .00005;  // step size
+real time_end = 1;  // length of simulation
 real current_time = 0;
 int out_fps = 6000;
 int out_steps = std::ceil((1.0 / timestep) / out_fps);
 
 int num_steps = time_end / timestep;
-int max_iteration = 20;
+int max_iteration = 15;
 int tolerance = 1e-8;
 
 std::string data_output_path = "data_sls";
@@ -168,7 +170,6 @@ int main(int argc, char* argv[]) {
 
     gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
                           ChVector<>(container_width * .9, particle_layer_thickness, container_length * .9));
-
 
 #if 0
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
