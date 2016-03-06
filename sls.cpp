@@ -105,6 +105,7 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.use_full_inertia_tensor = false;
     system->GetSettings()->solver.contact_recovery_speed = 180;
     system->GetSettings()->solver.bilateral_clamp_speed = 1e8;
+    system->GetSettings()->solver.skip_residual = 5;
     system->ChangeSolverType(BB);
     system->SetLoggingLevel(LOG_INFO);
     system->SetLoggingLevel(LOG_TRACE);
