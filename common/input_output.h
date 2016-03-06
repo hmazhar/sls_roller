@@ -83,16 +83,16 @@ void DumpFluidData(chrono::ChSystemParallelDVI* system, std::string filename, bo
         writethreads.clear();
     }
 }
-void WriteStringData(const std::string&& filename, const std::stringstream&& ss) {
+void WriteStringData(const std::string&& filename, const std::string&& ss) {
     gzFile gz_file = gzopen(filename.c_str(), "wb");
-    unsigned long int file_size = sizeof(char) * ss.str().size();
+    unsigned long int file_size = sizeof(char) * ss.size();
     // writing size of file
     gzwrite(gz_file, (void*)&file_size, sizeof(file_size));
-    gzwrite(gz_file, (void*)(ss.str().data()), file_size);
+    gzwrite(gz_file, (void*)(ss.data()), file_size);
     gzclose(gz_file);
 }
 
-void DumpStringData(std::string filename, std::stringstream& ss) {
+void DumpStringData(std::string filename, std::string ss) {
     writethreads.push_back(std::thread(WriteStringData, std::move(filename), std::move(ss)));
     if (writethreads.size() > 8) {
         for (std::thread& t : writethreads) {
@@ -243,7 +243,7 @@ void DumpAllObjectsWithGeometryPovray(ChSystem* mSys, std::string filename, bool
             }
         }
     }
-    DumpStringData(filename, csv_output.ss);
+    DumpStringData(filename, csv_output.ss.str());
 }
 
 #endif
