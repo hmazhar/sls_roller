@@ -9,7 +9,7 @@ using std::cout;
 using std::endl;
 
 // all dimensions are in millimeters, milligrams
-real container_width = 5;        // width of area with particles
+real container_width = 2.5;      // width of area with particles
 real container_length = 25;      // length of area that roller will go over		1194mm maximum
 real container_thickness = .25;  // thickness of container walls
 real container_height = 2;       // height of the outer walls
@@ -30,7 +30,7 @@ real particle_radius = .058 / 2.0;
 real particle_std_dev = .015 / 2.0;
 real particle_mass = .05;
 real particle_density = 0.93;
-real particle_layer_thickness = particle_radius * 16;
+real particle_layer_thickness = particle_radius * 32;
 real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
@@ -105,15 +105,13 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.use_full_inertia_tensor = false;
     system->GetSettings()->solver.contact_recovery_speed = 180;
     system->GetSettings()->solver.bilateral_clamp_speed = 1e8;
-    system->GetSettings()->solver.skip_residual = 5;
     system->ChangeSolverType(BB);
     system->SetLoggingLevel(LOG_INFO);
     system->SetLoggingLevel(LOG_TRACE);
 
     system->GetSettings()->collision.collision_envelope = particle_radius * .05;
-    system->GetSettings()->collision.bins_per_axis = int3(40, 300, 400);
+    system->GetSettings()->collision.bins_per_axis = vec3(40, 300, 400);
     system->GetSettings()->collision.narrowphase_algorithm = NARROWPHASE_HYBRID_MPR;
-    system->GetSettings()->collision.use_two_level = false;
     system->GetSettings()->collision.fixed_bins = true;
 
     auto material_plate = std::make_shared<ChMaterialSurface>();
@@ -169,10 +167,9 @@ int main(int argc, char* argv[]) {
                             particle_radius + particle_std_dev);
     m1->setDefaultMaterialDVI(material_granular);
 
-    gen->createObjectsBox(
-        utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
-        ChVector<>(container_width * .9 - (particle_radius + particle_std_dev) * 2, particle_layer_thickness,
-                   container_length * .9 - (particle_radius + particle_std_dev) * 2));
+    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
+                          ChVector<>(container_width - container_thickness*2.5, particle_layer_thickness,
+                                     container_length - container_thickness*2.5));
 
 #if 0
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
