@@ -105,6 +105,9 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.use_full_inertia_tensor = false;
     system->GetSettings()->solver.contact_recovery_speed = 180;
     system->GetSettings()->solver.bilateral_clamp_speed = 1e8;
+    system->GetSettings()->collision.aabb_max = real3(4.50145, 77.3794, 75.8014);
+    system->GetSettings()->collision.aabb_min = real3(-4.50145, -0.25145, -25.0014);
+    system->GetSettings()->collision.use_aabb_active = true;
     system->ChangeSolverType(BB);
     system->SetLoggingLevel(LOG_INFO);
     system->SetLoggingLevel(LOG_TRACE);
