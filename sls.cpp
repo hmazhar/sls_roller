@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
                             particle_radius + particle_std_dev);
     m1->setDefaultMaterialDVI(material_granular);
 
-    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
+    gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0 + particle_layer_thickness*.5, 0),
                           ChVector<>(container_width - container_thickness * 2.5, particle_layer_thickness,
                                      container_length - container_thickness * 2.5));
 
