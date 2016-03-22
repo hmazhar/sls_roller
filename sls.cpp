@@ -35,17 +35,17 @@ real particle_friction = .52;
 real rolling_friction = .1;
 real spinning_friction = .1;
 real gravity = -9810;  // acceleration due to gravity
-// step size which will not allow interpenetration more than 1/6 of smallest radius
-real timestep = Abs(((particle_radius - particle_std_dev) / 3.0) / roller_velocity);
-// real timestep = .00005;  // step size
-real time_end = 1;  // length of simulation
+                       // step size which will not allow interpenetration more than 1/6 of smallest radius
+// real timestep = Abs(((particle_radius - particle_std_dev) / 3.0) / roller_velocity);
+real timestep = .00005;  // step size
+real time_end = 1;       // length of simulation
 real current_time = 0;
 int out_fps = 6000;
 int out_steps = std::ceil((1.0 / timestep) / out_fps);
 
 int num_steps = time_end / timestep;
 int max_iteration = 15;
-int tolerance = 1e-8;
+int tolerance = 0;
 
 std::string data_output_path = "data_sls";
 std::shared_ptr<ChBody> ROLLER;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
     time_end = (roller_start) / Abs(roller_velocity);
 
-    printf("Time to run: %f %f\n", roller_start, time_end);
+    printf("Time to run: %f %f %f\n", roller_start, time_end, timestep);
 
     num_steps = time_end / timestep;
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 
     system->GetSettings()->solver.tolerance = tolerance;
     system->GetSettings()->solver.solver_mode = SPINNING;
-    system->GetSettings()->solver.max_iteration_normal = max_iteration;
+    system->GetSettings()->solver.max_iteration_normal = 30;
     system->GetSettings()->solver.max_iteration_sliding = max_iteration;
     system->GetSettings()->solver.max_iteration_spinning = max_iteration;
     system->GetSettings()->solver.max_iteration_bilateral = 0;  // make 1000, should be about 220
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.contact_recovery_speed = 180;
     system->GetSettings()->solver.bilateral_clamp_speed = 1e8;
     system->GetSettings()->collision.aabb_max = real3(4.50145, 77.3794, 75.8014);
-    system->GetSettings()->collision.aabb_min = real3(-4.50145, -0.25145, -25.0014);
+    system->GetSettings()->collision.aabb_min = real3(-4.50145, -0.125, -25.0014);
     system->GetSettings()->collision.use_aabb_active = true;
     system->ChangeSolverType(BB);
     system->SetLoggingLevel(LOG_INFO);
@@ -171,8 +171,8 @@ int main(int argc, char* argv[]) {
     m1->setDefaultMaterialDVI(material_granular);
 
     gen->createObjectsBox(utils::HCP_PACK, (particle_radius + particle_std_dev) * 2, ChVector<>(0, 1.0, 0),
-                          ChVector<>(container_width - container_thickness*2.5, particle_layer_thickness,
-                                     container_length - container_thickness*2.5));
+                          ChVector<>(container_width - container_thickness * 2.5, particle_layer_thickness,
+                                     container_length - container_thickness * 2.5));
 
 #if 0
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
